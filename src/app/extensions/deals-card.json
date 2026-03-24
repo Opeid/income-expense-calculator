@@ -1,7 +1,7 @@
 {
   "type": "crm-card",
   "data": {
-    "title": "Deals Card",
+    "title": "Income Expenses Calculator",
     "location": "crm.record.tab",
     "module": {
       "file": "deals-card.jsx"

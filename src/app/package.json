@@ -1,0 +1,9 @@
+{
+  "name": "deals-extension-app",
+  "version": "1.0.0",
+  "description": "Monthly income calculator CRM card",
+  "dependencies": {
+    "@hubspot/ui-extensions": "^1.0.0",
+    "react": "^18.0.0"
+  }
+}
