@@ -1,0 +1,15 @@
+{
+  "name": "Deals Extension",
+  "uid": "deals-extension",
+  "scopes": [],
+  "public": false,
+  "extensions": {
+    "crm": {
+      "cards": [
+        {
+          "file": "extensions/deals-card.json"
+        }
+      ]
+    }
+  }
+}

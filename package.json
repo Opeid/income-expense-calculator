@@ -1,0 +1,13 @@
+{
+  "name": "hubspot-deals-extension",
+  "version": "1.0.0",
+  "description": "HubSpot UI Extension CRM card for Deals",
+  "scripts": {
+    "dev": "hs project dev",
+    "deploy": "hs project deploy",
+    "upload": "hs project upload"
+  },
+  "devDependencies": {
+    "@hubspot/cli": "latest"
+  }
+}
