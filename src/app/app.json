@@ -2,7 +2,7 @@
   "name": "Income Expenses Calculator",
   "uid": "income-expenses-calculator",
   "description": "Income and expenses calculator CRM card for deal records",
-  "scopes": ["crm.objects.deals.read"],
+  "scopes": ["crm.objects.deals.read", "crm.objects.deals.write"],
   "public": false,
   "extensions": {
     "crm": {
@@ -12,5 +12,11 @@
         }
       ]
     }
-  }
+  },
+  "functions": [
+    {
+      "path": "app.functions",
+      "name": "saveIncomeProperty"
+    }
+  ]
 }

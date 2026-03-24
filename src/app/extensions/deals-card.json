@@ -8,7 +8,13 @@
     },
     "objectTypes": [
       {
-        "name": "deals"
+        "name": "deals",
+        "propertiesToSend": ["source_of_income_calculator"]
+      }
+    ],
+    "serverlessFunctions": [
+      {
+        "name": "saveIncomeProperty"
       }
     ]
   }

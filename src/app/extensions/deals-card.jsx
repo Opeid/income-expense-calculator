@@ -1,5 +1,6 @@
 import { useState } from "react";
 import {
+  Alert,
   Divider,
   Flex,
   NumberInput,
@@ -7,104 +8,104 @@ import {
   hubspot,
 } from "@hubspot/ui-extensions";
 
-hubspot.extend(() => <MonthlyIncomeCard />);
+hubspot.extend(({ context, runServerlessFunction }) => (
+  <MonthlyIncomeCard
+    context={context}
+    runServerlessFunction={runServerlessFunction}
+  />
+));
 
 const toNum = (v) => parseFloat(v) || 0;
 const fmt = (v) => `$${toNum(v).toFixed(2)}`;
 
-const Dot = () => (
-  <Text format={{ color: "success" }}>●</Text>
-);
+const DEFAULTS = {
+  primary_wages: 0,
+  primary_social_security: 0,
+  primary_pension: 0,
+  spouse_wages: 0,
+  spouse_social_security: 0,
+  spouse_pension: 0,
+  dividends_interest: 0,
+  rental_income: 0,
+  rental_expenses: 0,
+  distributions_k1: 0,
+  alimony: 0,
+  child_support: 0,
+  other_subsidy: 0,
+  other_income_1: 0,
+  other_income_2: 0,
+};
 
-const ReadonlyAmount = ({ value }) => (
-  <Text format={{ fontWeight: "bold" }}>{fmt(value)}</Text>
-);
+const parseStored = (raw) => {
+  try {
+    return { ...DEFAULTS, ...JSON.parse(raw || "{}") };
+  } catch {
+    return { ...DEFAULTS };
+  }
+};
 
-const MonthlyIncomeCard = () => {
-  const [primaryWages, setPrimaryWages] = useState(0);
-  const [primarySS, setPrimarySS] = useState(0);
-  const [primaryPension, setPrimaryPension] = useState(0);
+const MonthlyIncomeCard = ({ context, runServerlessFunction }) => {
+  const raw = context.crm.objectProperties?.source_of_income_calculator;
+  const objectId = context.crm.objectId;
 
-  const [spouseWages, setSpouseWages] = useState(0);
-  const [spouseSS, setSpouseSS] = useState(0);
-  const [spousePension, setSpousePension] = useState(0);
+  const [values, setValues] = useState(() => parseStored(raw));
+  const [saving, setSaving] = useState(false);
+  const [saveError, setSaveError] = useState(null);
 
-  const [dividends, setDividends] = useState(0);
-  const [rentalIncome, setRentalIncome] = useState(0);
-  const [rentalExpenses, setRentalExpenses] = useState(0);
-  const [distributions, setDistributions] = useState(0);
-  const [alimony, setAlimony] = useState(0);
-  const [childSupport, setChildSupport] = useState(0);
-  const [otherSubsidy, setOtherSubsidy] = useState(0);
-  const [otherIncome1, setOtherIncome1] = useState(0);
-  const [otherIncome2, setOtherIncome2] = useState(0);
+  const handleChange = (key, val) => {
+    const updated = { ...values, [key]: val };
+    setValues(updated);
+    setSaving(true);
+    setSaveError(null);
 
-  const primaryTotal =
-    toNum(primaryWages) + toNum(primarySS) + toNum(primaryPension);
-  const spouseTotal =
-    toNum(spouseWages) + toNum(spouseSS) + toNum(spousePension);
-  const rentalNet = toNum(rentalIncome) - toNum(rentalExpenses);
+    runServerlessFunction({
+      name: "saveIncomeProperty",
+      parameters: { data: updated, objectId },
+      callback: ({ response, error }) => {
+        setSaving(false);
+        if (error || response?.status === "error") {
+          setSaveError("Failed to save. Please try again.");
+        }
+      },
+    });
+  };
 
+  const v = values;
+  const primaryTotal = toNum(v.primary_wages) + toNum(v.primary_social_security) + toNum(v.primary_pension);
+  const spouseTotal = toNum(v.spouse_wages) + toNum(v.spouse_social_security) + toNum(v.spouse_pension);
+  const rentalNet = toNum(v.rental_income) - toNum(v.rental_expenses);
   const totalMonthly =
-    primaryTotal +
-    spouseTotal +
-    toNum(dividends) +
-    rentalNet +
-    toNum(distributions) +
-    toNum(alimony) +
-    toNum(childSupport) +
-    toNum(otherSubsidy) +
-    toNum(otherIncome1) +
-    toNum(otherIncome2);
+    primaryTotal + spouseTotal + toNum(v.dividends_interest) + rentalNet +
+    toNum(v.distributions_k1) + toNum(v.alimony) + toNum(v.child_support) +
+    toNum(v.other_subsidy) + toNum(v.other_income_1) + toNum(v.other_income_2);
 
   const simpleRows = [
-    {
-      label: "Distributions (K-1)",
-      value: distributions,
-      onChange: setDistributions,
-      name: "distributions",
-    },
-    {
-      label: "Alimony",
-      value: alimony,
-      onChange: setAlimony,
-      name: "alimony",
-    },
-    {
-      label: "Child Support",
-      value: childSupport,
-      onChange: setChildSupport,
-      name: "childSupport",
-    },
-    {
-      label: "Other (Rent subsidy, Oil credit, etc.)",
-      value: otherSubsidy,
-      onChange: setOtherSubsidy,
-      name: "otherSubsidy",
-    },
-    {
-      label: "Other Income",
-      value: otherIncome1,
-      onChange: setOtherIncome1,
-      name: "otherIncome1",
-    },
-    {
-      label: "Other Income",
-      value: otherIncome2,
-      onChange: setOtherIncome2,
-      name: "otherIncome2",
-    },
+    { label: "Distributions (K-1)", key: "distributions_k1" },
+    { label: "Alimony", key: "alimony" },
+    { label: "Child Support", key: "child_support" },
+    { label: "Other (Rent subsidy, Oil credit, etc.)", key: "other_subsidy" },
+    { label: "Other Income", key: "other_income_1" },
+    { label: "Other Income", key: "other_income_2" },
   ];
 
   return (
     <Flex direction="column" gap="sm">
-      {/* Title */}
-      <Text format={{ fontWeight: "bold", fontSize: "xl" }}>
-        Income Expenses Calculator
-      </Text>
+      {/* Header */}
+      <Flex justify="between" align="center">
+        <Text format={{ fontWeight: "bold", fontSize: "xl" }}>
+          Income Expenses Calculator
+        </Text>
+        {saving && <Text format={{ color: "medium" }}>Saving...</Text>}
+      </Flex>
+
+      {saveError && (
+        <Alert title="Save Error" variant="error">
+          {saveError}
+        </Alert>
+      )}
+
       <Divider />
 
-      {/* Column headers */}
       <Flex justify="between">
         <Text format={{ fontWeight: "bold" }}>Source of Income</Text>
         <Text>Monthly</Text>
@@ -115,119 +116,119 @@ const MonthlyIncomeCard = () => {
       <Text>Primary Taxpayer</Text>
       <Flex align="end" gap="xs" justify="between">
         <Flex align="end" gap="xs">
-          <Dot />
+          <Text format={{ color: "success" }}>●</Text>
           <NumberInput
             label="Wages"
-            name="primaryWages"
-            value={primaryWages}
-            onChange={setPrimaryWages}
+            name="primary_wages"
+            value={v.primary_wages}
+            onChange={(val) => handleChange("primary_wages", val)}
             prefix="$"
           />
           <Text>+</Text>
           <NumberInput
             label="Social Security"
-            name="primarySS"
-            value={primarySS}
-            onChange={setPrimarySS}
+            name="primary_social_security"
+            value={v.primary_social_security}
+            onChange={(val) => handleChange("primary_social_security", val)}
             prefix="$"
           />
           <Text>+</Text>
           <NumberInput
             label="Pension(s)"
-            name="primaryPension"
-            value={primaryPension}
-            onChange={setPrimaryPension}
+            name="primary_pension"
+            value={v.primary_pension}
+            onChange={(val) => handleChange("primary_pension", val)}
             prefix="$"
           />
           <Text>=</Text>
         </Flex>
-        <ReadonlyAmount value={primaryTotal} />
+        <Text format={{ fontWeight: "bold" }}>{fmt(primaryTotal)}</Text>
       </Flex>
 
       {/* Spouse / Other contributors */}
       <Text>Spouse/Other contributors to the household</Text>
       <Flex align="end" gap="xs" justify="between">
         <Flex align="end" gap="xs">
-          <Dot />
+          <Text format={{ color: "success" }}>●</Text>
           <NumberInput
             label="Wages"
-            name="spouseWages"
-            value={spouseWages}
-            onChange={setSpouseWages}
+            name="spouse_wages"
+            value={v.spouse_wages}
+            onChange={(val) => handleChange("spouse_wages", val)}
             prefix="$"
           />
           <Text>+</Text>
           <NumberInput
             label="Social Security"
-            name="spouseSS"
-            value={spouseSS}
-            onChange={setSpouseSS}
+            name="spouse_social_security"
+            value={v.spouse_social_security}
+            onChange={(val) => handleChange("spouse_social_security", val)}
             prefix="$"
           />
           <Text>+</Text>
           <NumberInput
             label="Pension(s)"
-            name="spousePension"
-            value={spousePension}
-            onChange={setSpousePension}
+            name="spouse_pension"
+            value={v.spouse_pension}
+            onChange={(val) => handleChange("spouse_pension", val)}
             prefix="$"
           />
           <Text>=</Text>
         </Flex>
-        <ReadonlyAmount value={spouseTotal} />
+        <Text format={{ fontWeight: "bold" }}>{fmt(spouseTotal)}</Text>
       </Flex>
 
       {/* Dividends - Interest */}
       <Flex align="center" justify="between">
         <Flex align="center" gap="xs">
-          <Dot />
+          <Text format={{ color: "success" }}>●</Text>
           <Text>Dividends - Interest</Text>
         </Flex>
         <NumberInput
           label=""
-          name="dividends"
-          value={dividends}
-          onChange={setDividends}
+          name="dividends_interest"
+          value={v.dividends_interest}
+          onChange={(val) => handleChange("dividends_interest", val)}
           prefix="$"
         />
       </Flex>
 
-      {/* Rental Income - Expenses */}
+      {/* Rental */}
       <Flex align="end" gap="xs" justify="between">
         <Flex align="end" gap="xs">
-          <Dot />
+          <Text format={{ color: "success" }}>●</Text>
           <NumberInput
             label="Rental Income"
-            name="rentalIncome"
-            value={rentalIncome}
-            onChange={setRentalIncome}
+            name="rental_income"
+            value={v.rental_income}
+            onChange={(val) => handleChange("rental_income", val)}
             prefix="$"
           />
           <Text>-</Text>
           <NumberInput
             label="Rental Expenses"
-            name="rentalExpenses"
-            value={rentalExpenses}
-            onChange={setRentalExpenses}
+            name="rental_expenses"
+            value={v.rental_expenses}
+            onChange={(val) => handleChange("rental_expenses", val)}
             prefix="$"
           />
           <Text>=</Text>
         </Flex>
-        <ReadonlyAmount value={rentalNet} />
+        <Text format={{ fontWeight: "bold" }}>{fmt(rentalNet)}</Text>
       </Flex>
 
-      {/* Simple single-input rows */}
-      {simpleRows.map(({ label, value, onChange, name }) => (
-        <Flex key={name} align="center" justify="between">
+      {/* Simple rows */}
+      {simpleRows.map(({ label, key }) => (
+        <Flex key={key} align="center" justify="between">
           <Flex align="center" gap="xs">
-            <Dot />
+            <Text format={{ color: "success" }}>●</Text>
             <Text>{label}</Text>
           </Flex>
           <NumberInput
             label=""
-            name={name}
-            value={value}
-            onChange={onChange}
+            name={key}
+            value={v[key]}
+            onChange={(val) => handleChange(key, val)}
             prefix="$"
           />
         </Flex>
