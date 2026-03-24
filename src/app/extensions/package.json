@@ -1,0 +1,9 @@
+{
+  "name": "income-expense-calculator-extensions",
+  "version": "1.0.0",
+  "description": "Income Expenses Calculator card extension",
+  "dependencies": {
+    "@hubspot/ui-extensions": "^0.12.3",
+    "react": "^18.0.0"
+  }
+}
