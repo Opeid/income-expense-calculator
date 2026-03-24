@@ -54,16 +54,22 @@ const MonthlyIncomeCard = ({ context, runServerlessFunction }) => {
   const [saveError, setSaveError] = useState(null);
 
   useEffect(() => {
+    const timeout = setTimeout(() => setLoading(false), 5000);
+
     runServerlessFunction({
       name: "loadIncomeData",
       parameters: { objectId },
-      callback: ({ response }) => {
+      callback: (result) => {
+        clearTimeout(timeout);
+        const response = result?.response ?? result;
         if (response?.data) {
           setValues(parseStored(response.data));
         }
         setLoading(false);
       },
     });
+
+    return () => clearTimeout(timeout);
   }, []);
 
   const handleChange = (key, val) => {
