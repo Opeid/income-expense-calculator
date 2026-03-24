@@ -1,8 +1,9 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import {
   Alert,
   Divider,
   Flex,
+  LoadingSpinner,
   NumberInput,
   Text,
   hubspot,
@@ -45,12 +46,25 @@ const parseStored = (raw) => {
 };
 
 const MonthlyIncomeCard = ({ context, runServerlessFunction }) => {
-  const raw = context.crm.objectProperties?.source_of_income_calculator;
   const objectId = context.crm.objectId;
 
-  const [values, setValues] = useState(() => parseStored(raw));
+  const [values, setValues] = useState({ ...DEFAULTS });
+  const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [saveError, setSaveError] = useState(null);
+
+  useEffect(() => {
+    runServerlessFunction({
+      name: "loadIncomeData",
+      parameters: { objectId },
+      callback: ({ response }) => {
+        if (response?.data) {
+          setValues(parseStored(response.data));
+        }
+        setLoading(false);
+      },
+    });
+  }, []);
 
   const handleChange = (key, val) => {
     const updated = { ...values, [key]: val };
@@ -87,6 +101,14 @@ const MonthlyIncomeCard = ({ context, runServerlessFunction }) => {
     { label: "Other Income", key: "other_income_1" },
     { label: "Other Income", key: "other_income_2" },
   ];
+
+  if (loading) {
+    return (
+      <Flex justify="center" align="center">
+        <LoadingSpinner label="Loading..." showLabel={true} />
+      </Flex>
+    );
+  }
 
   return (
     <Flex direction="column" gap="sm">

@@ -2,6 +2,9 @@
   "appFunctions": {
     "saveIncomeProperty": {
       "file": "saveIncomeProperty.js"
+    },
+    "loadIncomeData": {
+      "file": "loadIncomeData.js"
     }
   }
 }
