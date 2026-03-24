@@ -1,0 +1,7 @@
+{
+  "appFunctions": {
+    "saveIncomeProperty": {
+      "file": "saveIncomeProperty.js"
+    }
+  }
+}

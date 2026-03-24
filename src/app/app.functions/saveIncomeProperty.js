@@ -1,22 +1,28 @@
-const hubspot = require("@hubspot/api-client");
+const axios = require("axios");
 
-exports.main = async (context, sendResponse) => {
-  const { data, objectId } = context.parameters;
+exports.main = async ({ parameters }) => {
+  const { data, objectId } = parameters;
+  const token = process.env.PRIVATE_APP_ACCESS_TOKEN;
+
+  if (!token) {
+    return { status: "error", message: "PRIVATE_APP_ACCESS_TOKEN is not set" };
+  }
+  if (!objectId) {
+    return { status: "error", message: "objectId is missing" };
+  }
 
   try {
-    const token = process.env.PRIVATE_APP_ACCESS_TOKEN || context.secrets?.PRIVATE_APP_ACCESS_TOKEN;
-    const hubspotClient = new hubspot.Client({
-      accessToken: token,
-    });
+    await axios.patch(
+      `https://api.hubapi.com/crm/v3/objects/deals/${objectId}`,
+      { properties: { source_of_income_calculator: JSON.stringify(data) } },
+      { headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" } }
+    );
 
-    await hubspotClient.crm.deals.basicApi.update(objectId, {
-      properties: {
-        source_of_income_calculator: JSON.stringify(data),
-      },
-    });
-
-    sendResponse({ status: "success" });
-  } catch (error) {
-    sendResponse({ status: "error", message: error.message });
+    return { status: "success" };
+  } catch (err) {
+    return {
+      status: "error",
+      message: err.response?.data?.message || err.message || String(err),
+    };
   }
 };
