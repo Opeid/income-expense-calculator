@@ -235,9 +235,35 @@ const MyCard = ({ context, runServerlessFunction }) => {
 
 Store all card values in a **single CRM property as a JSON string**. This avoids creating many individual HubSpot properties.
 
-1. Create one **Single-line text** or **Multi-line text** (textarea) property in HubSpot
-2. On card load: parse the JSON from `context.crm.objectProperties.my_property_name`
-3. On every field change: save the entire values object back as `JSON.stringify(data)`
+1. Create one **Multi-line text** (textarea) property in HubSpot
+2. On card load: call a `loadData` serverless function via `useEffect` — do NOT use `propertiesToSend`
+3. On every field change: call a `saveData` serverless function with the full values object
+
+### Why not `propertiesToSend`?
+`propertiesToSend` loads property values into `context.crm.objectProperties` at card render time, but it is unreliable for properties written by serverless functions. Always use a dedicated load function instead.
+
+### Load pattern (JSX)
+```jsx
+useEffect(() => {
+  runServerlessFunction({
+    name: "loadIncomeData",
+    parameters: { objectId },
+    callback: ({ response }) => {
+      if (response?.data) setValues(parseStored(response.data));
+      setLoading(false);
+    },
+  });
+}, []);
+```
+
+### Load function (serverless)
+```js
+const response = await axios.get(
+  `https://api.hubapi.com/crm/v3/objects/deals/${objectId}?properties=my_property_name`,
+  { headers: { Authorization: `Bearer ${token}` } }
+);
+return { data: response.data.properties.my_property_name || null };
+```
 
 ---
 
@@ -286,6 +312,7 @@ Once the project is linked to a GitHub repo in HubSpot:
 | Adding `functions` key to `app.json` | Remove it — functions are auto-discovered via `serverless.json` |
 | Adding `serverlessFunctions` to card JSON | Remove it — not needed when using `serverless.json` |
 | Wrong property type for JSON storage | Use `textarea` (Multi-line text), not `number` |
+| Using `propertiesToSend` to load data | Use a `loadData` serverless function + `useEffect` instead |
 | Secret not picked up after `hs secrets add` | Push an empty commit to trigger a redeploy |
 | Platform version `2023.2` | Upgrade to `2025.1` — older version is deprecated |
 
