@@ -7,7 +7,14 @@
       "file": "deals-card.jsx"
     },
     "objectTypes": [
-      { "name": "deals" }
+      {
+        "name": "deals",
+        "propertiesToSend": [
+          "source_of_income_calculator",
+          "source_of_expenses_calculator",
+          "source_of_assets_calculator"
+        ]
+      }
     ]
   }
 }

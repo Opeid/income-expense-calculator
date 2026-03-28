@@ -1,9 +1,8 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import {
   Alert,
   Divider,
   Flex,
-  LoadingSpinner,
   NumberInput,
   Select,
   Tab,
@@ -76,39 +75,19 @@ const QS_OPTIONS = [
 
 const FinancialCalculators = ({ context, runServerlessFunction }) => {
   const objectId = context.crm.objectId;
+  const props = context.crm.objectProperties;
 
-  const [incomeValues, setIncomeValues] = useState({ ...INCOME_DEFAULTS });
-  const [expenseValues, setExpenseValues] = useState({ ...EXPENSE_DEFAULTS });
-  const [assetValues, setAssetValues] = useState({ ...ASSET_DEFAULTS });
-  const [loading, setLoading] = useState(true);
+  const [incomeValues, setIncomeValues] = useState(() =>
+    parseStored(props?.source_of_income_calculator, INCOME_DEFAULTS)
+  );
+  const [expenseValues, setExpenseValues] = useState(() =>
+    parseStored(props?.source_of_expenses_calculator, EXPENSE_DEFAULTS)
+  );
+  const [assetValues, setAssetValues] = useState(() =>
+    parseStored(props?.source_of_assets_calculator, ASSET_DEFAULTS)
+  );
   const [saving, setSaving] = useState(false);
   const [saveError, setSaveError] = useState(null);
-  const [debugInfo, setDebugInfo] = useState(null);
-
-  useEffect(() => {
-    let cancelled = false;
-    const timeout = setTimeout(() => { if (!cancelled) setLoading(false); }, 10000);
-
-    runServerlessFunction({
-      name: "loadIncomeData",
-      parameters: { objectId },
-      callback: (result) => {
-        if (cancelled) return;
-        clearTimeout(timeout);
-        setDebugInfo(JSON.stringify(result));
-        const response = result?.response ?? result;
-        if (response?.income) setIncomeValues(parseStored(response.income, INCOME_DEFAULTS));
-        if (response?.expenses) setExpenseValues(parseStored(response.expenses, EXPENSE_DEFAULTS));
-        if (response?.assets) setAssetValues(parseStored(response.assets, ASSET_DEFAULTS));
-        setLoading(false);
-      },
-    });
-
-    return () => {
-      cancelled = true;
-      clearTimeout(timeout);
-    };
-  }, []);
 
   const handleChange = (propertyName, currentValues, setter, key, val) => {
     const updated = { ...currentValues, [key]: val };
@@ -127,19 +106,10 @@ const FinancialCalculators = ({ context, runServerlessFunction }) => {
     });
   };
 
-  if (loading) {
-    return (
-      <Flex justify="center" align="center">
-        <LoadingSpinner label="Loading..." showLabel={true} />
-      </Flex>
-    );
-  }
-
   return (
     <Flex direction="column" gap="sm">
       {saving && <Text format={{ color: "medium" }}>Saving...</Text>}
       {saveError && <Alert title="Save Error" variant="error">{saveError}</Alert>}
-      {debugInfo && <Alert title="DEBUG - Load Response">{debugInfo}</Alert>}
 
       <Tabs defaultSelected="income">
         <Tab tabId="income" title="Monthly Income">
