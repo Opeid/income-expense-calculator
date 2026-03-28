@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import {
   Alert,
   Divider,
@@ -11,10 +11,11 @@ import {
   hubspot,
 } from "@hubspot/ui-extensions";
 
-hubspot.extend(({ context, runServerlessFunction }) => (
+hubspot.extend(({ context, runServerlessFunction, actions }) => (
   <FinancialCalculators
     context={context}
     runServerlessFunction={runServerlessFunction}
+    actions={actions}
   />
 ));
 
@@ -73,21 +74,31 @@ const QS_OPTIONS = [
 
 // ── Main Component ────────────────────────────────────────────────────────────
 
-const FinancialCalculators = ({ context, runServerlessFunction }) => {
+const FinancialCalculators = ({ context, runServerlessFunction, actions }) => {
   const objectId = context.crm.objectId;
-  const props = context.crm.objectProperties;
 
-  const [incomeValues, setIncomeValues] = useState(() =>
-    parseStored(props?.source_of_income_calculator, INCOME_DEFAULTS)
-  );
-  const [expenseValues, setExpenseValues] = useState(() =>
-    parseStored(props?.source_of_expenses_calculator, EXPENSE_DEFAULTS)
-  );
-  const [assetValues, setAssetValues] = useState(() =>
-    parseStored(props?.source_of_assets_calculator, ASSET_DEFAULTS)
-  );
+  const [incomeValues, setIncomeValues] = useState({ ...INCOME_DEFAULTS });
+  const [expenseValues, setExpenseValues] = useState({ ...EXPENSE_DEFAULTS });
+  const [assetValues, setAssetValues] = useState({ ...ASSET_DEFAULTS });
   const [saving, setSaving] = useState(false);
   const [saveError, setSaveError] = useState(null);
+  const [loadDebug, setLoadDebug] = useState("loading...");
+
+  useEffect(() => {
+    actions.fetchCrmObjectProperties([
+      "source_of_income_calculator",
+      "source_of_expenses_calculator",
+      "source_of_assets_calculator",
+    ]).then((fetched) => {
+      setLoadDebug(JSON.stringify(fetched));
+      if (fetched.source_of_income_calculator)
+        setIncomeValues(parseStored(fetched.source_of_income_calculator, INCOME_DEFAULTS));
+      if (fetched.source_of_expenses_calculator)
+        setExpenseValues(parseStored(fetched.source_of_expenses_calculator, EXPENSE_DEFAULTS));
+      if (fetched.source_of_assets_calculator)
+        setAssetValues(parseStored(fetched.source_of_assets_calculator, ASSET_DEFAULTS));
+    }).catch((err) => setLoadDebug("ERROR: " + String(err)));
+  }, []);
 
   const handleChange = (propertyName, currentValues, setter, key, val) => {
     const updated = { ...currentValues, [key]: val };
@@ -98,10 +109,10 @@ const FinancialCalculators = ({ context, runServerlessFunction }) => {
     runServerlessFunction({
       name: "saveIncomeProperty",
       parameters: { propertyName, data: updated, objectId },
-      callback: ({ response, error }) => {
+      callback: (result) => {
         setSaving(false);
+        const response = result?.response ?? result;
         if (response?.status === "error") setSaveError(response.message);
-        else if (error) setSaveError(String(error));
       },
     });
   };
@@ -110,7 +121,7 @@ const FinancialCalculators = ({ context, runServerlessFunction }) => {
     <Flex direction="column" gap="sm">
       {saving && <Text format={{ color: "medium" }}>Saving...</Text>}
       {saveError && <Alert title="Save Error" variant="error">{saveError}</Alert>}
-      <Alert title="DEBUG props">assets={String(props?.source_of_assets_calculator)}</Alert>
+      <Alert title="DEBUG load">{loadDebug}</Alert>
 
       <Tabs defaultSelected="income">
         <Tab tabId="income" title="Monthly Income">
