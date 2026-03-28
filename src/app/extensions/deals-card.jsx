@@ -85,22 +85,28 @@ const FinancialCalculators = ({ context, runServerlessFunction }) => {
   const [saveError, setSaveError] = useState(null);
 
   useEffect(() => {
-    const timeout = setTimeout(() => setLoading(false), 5000);
+    let cancelled = false;
+    const timeout = setTimeout(() => { if (!cancelled) setLoading(false); }, 10000);
 
     runServerlessFunction({
       name: "loadIncomeData",
       parameters: { objectId },
-      callback: (result) => {
+      callback: ({ response, error }) => {
+        if (cancelled) return;
         clearTimeout(timeout);
-        const response = result?.response ?? result;
-        if (response?.income) setIncomeValues(parseStored(response.income, INCOME_DEFAULTS));
-        if (response?.expenses) setExpenseValues(parseStored(response.expenses, EXPENSE_DEFAULTS));
-        if (response?.assets) setAssetValues(parseStored(response.assets, ASSET_DEFAULTS));
+        if (response) {
+          if (response.income) setIncomeValues(parseStored(response.income, INCOME_DEFAULTS));
+          if (response.expenses) setExpenseValues(parseStored(response.expenses, EXPENSE_DEFAULTS));
+          if (response.assets) setAssetValues(parseStored(response.assets, ASSET_DEFAULTS));
+        }
         setLoading(false);
       },
     });
 
-    return () => clearTimeout(timeout);
+    return () => {
+      cancelled = true;
+      clearTimeout(timeout);
+    };
   }, []);
 
   const handleChange = (propertyName, currentValues, setter, key, val) => {
@@ -112,10 +118,10 @@ const FinancialCalculators = ({ context, runServerlessFunction }) => {
     runServerlessFunction({
       name: "saveIncomeProperty",
       parameters: { propertyName, data: updated, objectId },
-      callback: (result) => {
+      callback: ({ response, error }) => {
         setSaving(false);
-        const response = result?.response ?? result;
         if (response?.status === "error") setSaveError(response.message);
+        else if (error) setSaveError(String(error));
       },
     });
   };
