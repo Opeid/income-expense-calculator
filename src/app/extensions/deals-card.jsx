@@ -82,22 +82,19 @@ const FinancialCalculators = ({ context, runServerlessFunction, actions }) => {
   const [assetValues, setAssetValues] = useState({ ...ASSET_DEFAULTS });
   const [saving, setSaving] = useState(false);
   const [saveError, setSaveError] = useState(null);
-  const [loadDebug, setLoadDebug] = useState("loading...");
-
   useEffect(() => {
     actions.fetchCrmObjectProperties([
       "source_of_income_calculator",
       "source_of_expenses_calculator",
       "source_of_assets_calculator",
     ]).then((fetched) => {
-      setLoadDebug(JSON.stringify(fetched));
       if (fetched.source_of_income_calculator)
         setIncomeValues(parseStored(fetched.source_of_income_calculator, INCOME_DEFAULTS));
       if (fetched.source_of_expenses_calculator)
         setExpenseValues(parseStored(fetched.source_of_expenses_calculator, EXPENSE_DEFAULTS));
       if (fetched.source_of_assets_calculator)
         setAssetValues(parseStored(fetched.source_of_assets_calculator, ASSET_DEFAULTS));
-    }).catch((err) => setLoadDebug("ERROR: " + String(err)));
+    }).catch(() => {});
   }, []);
 
   const handleChange = (propertyName, currentValues, setter, key, val) => {
@@ -121,7 +118,7 @@ const FinancialCalculators = ({ context, runServerlessFunction, actions }) => {
     <Flex direction="column" gap="sm">
       {saving && <Text format={{ color: "medium" }}>Saving...</Text>}
       {saveError && <Alert title="Save Error" variant="error">{saveError}</Alert>}
-      <Alert title="DEBUG load">{loadDebug}</Alert>
+
 
       <Tabs defaultSelected="income">
         <Tab tabId="income" title="Monthly Income">

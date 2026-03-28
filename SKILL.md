@@ -243,27 +243,24 @@ Store all card values in a **single CRM property as a JSON string**. This avoids
 `propertiesToSend` loads property values into `context.crm.objectProperties` at card render time, but it is unreliable for properties written by serverless functions. Always use a dedicated load function instead.
 
 ### Load pattern (JSX)
+
+Use `actions.fetchCrmObjectProperties` — do NOT use `runServerlessFunction` for loading. The serverless function callback never fires when called from `useEffect`, but `fetchCrmObjectProperties` works reliably.
+
 ```jsx
+hubspot.extend(({ context, runServerlessFunction, actions }) => (
+  <MyCard context={context} runServerlessFunction={runServerlessFunction} actions={actions} />
+));
+
+// Inside component:
 useEffect(() => {
-  runServerlessFunction({
-    name: "loadIncomeData",
-    parameters: { objectId },
-    callback: ({ response }) => {
-      if (response?.data) setValues(parseStored(response.data));
-      setLoading(false);
-    },
-  });
+  actions.fetchCrmObjectProperties(["my_property_name"]).then((fetched) => {
+    if (fetched.my_property_name)
+      setValues(parseStored(fetched.my_property_name, DEFAULTS));
+  }).catch(() => {});
 }, []);
 ```
 
-### Load function (serverless)
-```js
-const response = await axios.get(
-  `https://api.hubapi.com/crm/v3/objects/deals/${objectId}?properties=my_property_name`,
-  { headers: { Authorization: `Bearer ${token}` } }
-);
-return { data: response.data.properties.my_property_name || null };
-```
+> **Critical:** `runServerlessFunction` callbacks never fire when called from `useEffect` on mount. Only call `runServerlessFunction` from user event handlers (onChange, onClick, etc.). For reading data on load, always use `actions.fetchCrmObjectProperties`.
 
 ---
 
