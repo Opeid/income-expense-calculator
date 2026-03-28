@@ -83,6 +83,7 @@ const FinancialCalculators = ({ context, runServerlessFunction }) => {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [saveError, setSaveError] = useState(null);
+  const [debugInfo, setDebugInfo] = useState(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -91,14 +92,14 @@ const FinancialCalculators = ({ context, runServerlessFunction }) => {
     runServerlessFunction({
       name: "loadIncomeData",
       parameters: { objectId },
-      callback: ({ response, error }) => {
+      callback: (result) => {
         if (cancelled) return;
         clearTimeout(timeout);
-        if (response) {
-          if (response.income) setIncomeValues(parseStored(response.income, INCOME_DEFAULTS));
-          if (response.expenses) setExpenseValues(parseStored(response.expenses, EXPENSE_DEFAULTS));
-          if (response.assets) setAssetValues(parseStored(response.assets, ASSET_DEFAULTS));
-        }
+        setDebugInfo(JSON.stringify(result));
+        const response = result?.response ?? result;
+        if (response?.income) setIncomeValues(parseStored(response.income, INCOME_DEFAULTS));
+        if (response?.expenses) setExpenseValues(parseStored(response.expenses, EXPENSE_DEFAULTS));
+        if (response?.assets) setAssetValues(parseStored(response.assets, ASSET_DEFAULTS));
         setLoading(false);
       },
     });
@@ -138,6 +139,7 @@ const FinancialCalculators = ({ context, runServerlessFunction }) => {
     <Flex direction="column" gap="sm">
       {saving && <Text format={{ color: "medium" }}>Saving...</Text>}
       {saveError && <Alert title="Save Error" variant="error">{saveError}</Alert>}
+      {debugInfo && <Alert title="DEBUG - Load Response">{debugInfo}</Alert>}
 
       <Tabs defaultSelected="income">
         <Tab tabId="income" title="Monthly Income">
