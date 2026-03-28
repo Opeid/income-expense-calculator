@@ -1,6 +1,7 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import {
   Alert,
+  Button,
   Divider,
   Flex,
   NumberInput,
@@ -8,6 +9,7 @@ import {
   Tab,
   Tabs,
   Text,
+  TextArea,
   hubspot,
 } from "@hubspot/ui-extensions";
 
@@ -19,16 +21,17 @@ hubspot.extend(({ context, runServerlessFunction, actions }) => (
   />
 ));
 
-// ── Helpers ──────────────────────────────────────────────────────────────────
+// ── Helpers ───────────────────────────────────────────────────────────────────
 
 const toNum = (v) => parseFloat(v) || 0;
 const fmt = (v) => `$${toNum(v).toFixed(2)}`;
+const fmtPct = (v) => `${toNum(v).toFixed(1)}%`;
 const parseStored = (raw, defaults) => {
   try { return { ...defaults, ...JSON.parse(raw || "{}") }; }
   catch { return { ...defaults }; }
 };
 
-// ── Defaults ─────────────────────────────────────────────────────────────────
+// ── Defaults ──────────────────────────────────────────────────────────────────
 
 const INCOME_DEFAULTS = {
   primary_wages: 0, primary_social_security: 0, primary_pension: 0,
@@ -36,6 +39,7 @@ const INCOME_DEFAULTS = {
   dividends_interest: 0, rental_income: 0, rental_expenses: 0,
   distributions_k1: 0, alimony: 0, child_support: 0,
   other_subsidy: 0, other_income_1: 0, other_income_2: 0,
+  notes: "",
 };
 
 const EXPENSE_DEFAULTS = {
@@ -48,6 +52,7 @@ const EXPENSE_DEFAULTS = {
   gas_oil: 0, parking_tolls: 0, public_transportation: 0,
   health_insurance: 0, out_of_pocket_medical: 0, prescription: 0,
   child_care: 0, life_insurance_expense: 0, other_expenses: 0,
+  notes: "",
 };
 
 const ASSET_DEFAULTS = {
@@ -62,6 +67,7 @@ const ASSET_DEFAULTS = {
   vehicle4: 0, vehicle4_qs: "80", vehicle4_loan: 0,
   personal_effects: 0, personal_effects_qs: "80", personal_effects_loan: 0,
   other_assets: 0, other_assets_qs: "80", other_assets_loan: 0,
+  notes: "",
 };
 
 const QS_OPTIONS = [
@@ -72,16 +78,51 @@ const QS_OPTIONS = [
   { label: "50%", value: "50" },
 ];
 
+// ── Total Calculators ─────────────────────────────────────────────────────────
+
+const calcIncomeTotal = (v) => {
+  const primary = toNum(v.primary_wages) + toNum(v.primary_social_security) + toNum(v.primary_pension);
+  const spouse = toNum(v.spouse_wages) + toNum(v.spouse_social_security) + toNum(v.spouse_pension);
+  const rental = toNum(v.rental_income) - toNum(v.rental_expenses);
+  return primary + spouse + rental + toNum(v.dividends_interest) +
+    toNum(v.distributions_k1) + toNum(v.alimony) + toNum(v.child_support) +
+    toNum(v.other_subsidy) + toNum(v.other_income_1) + toNum(v.other_income_2);
+};
+
+const calcExpensesTotal = (v) =>
+  toNum(v.food) + toNum(v.housekeeping_supplies) + toNum(v.apparel_services) +
+  toNum(v.personal_care) + toNum(v.miscellaneous) +
+  toNum(v.mortgage_1) + toNum(v.mortgage_2) + toNum(v.rent) + toNum(v.homeowner_insurance) +
+  toNum(v.property_tax) + toNum(v.gas) + toNum(v.electricity) + toNum(v.water) +
+  toNum(v.cable_internet_phone) + toNum(v.other_housing) +
+  toNum(v.vehicle_payment_1) + toNum(v.vehicle_payment_2) + toNum(v.car_insurance) +
+  toNum(v.gas_oil) + toNum(v.parking_tolls) + toNum(v.public_transportation) +
+  toNum(v.health_insurance) + toNum(v.out_of_pocket_medical) + toNum(v.prescription) +
+  toNum(v.child_care) + toNum(v.life_insurance_expense) + toNum(v.other_expenses);
+
+const calcEquity = (value, qs, loan) => toNum(value) * (toNum(qs) / 100) - toNum(loan);
+
+const calcAssetsTotal = (v) => {
+  const simple = toNum(v.bank_accounts) + toNum(v.cash_on_hand);
+  const qs = ["investments", "life_insurance", "retirement", "real_estate",
+    "vehicle1", "vehicle2", "vehicle3", "vehicle4", "personal_effects", "other_assets"]
+    .reduce((sum, key) => sum + calcEquity(v[key], v[`${key}_qs`], v[`${key}_loan`]), 0);
+  return simple + qs;
+};
+
 // ── Main Component ────────────────────────────────────────────────────────────
 
 const FinancialCalculators = ({ context, runServerlessFunction, actions }) => {
   const objectId = context.crm.objectId;
+  const saveTimers = useRef({});
 
   const [incomeValues, setIncomeValues] = useState({ ...INCOME_DEFAULTS });
   const [expenseValues, setExpenseValues] = useState({ ...EXPENSE_DEFAULTS });
   const [assetValues, setAssetValues] = useState({ ...ASSET_DEFAULTS });
   const [saving, setSaving] = useState(false);
   const [saveError, setSaveError] = useState(null);
+  const [lastSaved, setLastSaved] = useState(null);
+
   useEffect(() => {
     actions.fetchCrmObjectProperties([
       "source_of_income_calculator",
@@ -97,31 +138,46 @@ const FinancialCalculators = ({ context, runServerlessFunction, actions }) => {
     }).catch(() => {});
   }, []);
 
+  const save = (propertyName, data) => {
+    clearTimeout(saveTimers.current[propertyName]);
+    setSaving(true);
+    setSaveError(null);
+    saveTimers.current[propertyName] = setTimeout(() => {
+      const fallback = setTimeout(() => {
+        setSaving(false);
+        setLastSaved(new Date().toLocaleTimeString());
+      }, 3000);
+      runServerlessFunction({
+        name: "saveIncomeProperty",
+        parameters: { propertyName, data, objectId },
+        callback: (result) => {
+          clearTimeout(fallback);
+          setSaving(false);
+          const response = result?.response ?? result;
+          if (response?.status === "error") setSaveError(response.message);
+          else setLastSaved(new Date().toLocaleTimeString());
+        },
+      });
+    }, 500);
+  };
+
   const handleChange = (propertyName, currentValues, setter, key, val) => {
     const updated = { ...currentValues, [key]: val };
     setter(updated);
-    setSaving(true);
-    setSaveError(null);
+    save(propertyName, updated);
+  };
 
-    const fallback = setTimeout(() => setSaving(false), 3000);
-
-    runServerlessFunction({
-      name: "saveIncomeProperty",
-      parameters: { propertyName, data: updated, objectId },
-      callback: (result) => {
-        clearTimeout(fallback);
-        setSaving(false);
-        const response = result?.response ?? result;
-        if (response?.status === "error") setSaveError(response.message);
-      },
-    });
+  const handleReset = (propertyName, defaults, setter) => {
+    const fresh = { ...defaults };
+    setter(fresh);
+    save(propertyName, fresh);
   };
 
   return (
     <Flex direction="column" gap="sm">
       {saving && <Text format={{ color: "medium" }}>Saving...</Text>}
+      {!saving && lastSaved && <Text format={{ color: "medium" }}>Saved at {lastSaved}</Text>}
       {saveError && <Alert title="Save Error" variant="error">{saveError}</Alert>}
-
 
       <Tabs defaultSelected="income">
         <Tab tabId="income" title="Monthly Income">
@@ -130,6 +186,7 @@ const FinancialCalculators = ({ context, runServerlessFunction, actions }) => {
             onChange={(key, val) =>
               handleChange("source_of_income_calculator", incomeValues, setIncomeValues, key, val)
             }
+            onReset={() => handleReset("source_of_income_calculator", INCOME_DEFAULTS, setIncomeValues)}
           />
         </Tab>
         <Tab tabId="expenses" title="Monthly Expenses">
@@ -138,6 +195,7 @@ const FinancialCalculators = ({ context, runServerlessFunction, actions }) => {
             onChange={(key, val) =>
               handleChange("source_of_expenses_calculator", expenseValues, setExpenseValues, key, val)
             }
+            onReset={() => handleReset("source_of_expenses_calculator", EXPENSE_DEFAULTS, setExpenseValues)}
           />
         </Tab>
         <Tab tabId="assets" title="Assets">
@@ -146,6 +204,14 @@ const FinancialCalculators = ({ context, runServerlessFunction, actions }) => {
             onChange={(key, val) =>
               handleChange("source_of_assets_calculator", assetValues, setAssetValues, key, val)
             }
+            onReset={() => handleReset("source_of_assets_calculator", ASSET_DEFAULTS, setAssetValues)}
+          />
+        </Tab>
+        <Tab tabId="summary" title="Summary">
+          <SummaryTab
+            income={incomeValues}
+            expenses={expenseValues}
+            assets={assetValues}
           />
         </Tab>
       </Tabs>
@@ -153,7 +219,7 @@ const FinancialCalculators = ({ context, runServerlessFunction, actions }) => {
   );
 };
 
-// ── Income Tab ────────────────────────────────────────────────────────────────
+// ── Shared UI ─────────────────────────────────────────────────────────────────
 
 const Dot = () => <Text format={{ color: "success" }}>●</Text>;
 
@@ -164,22 +230,44 @@ const SectionTotal = ({ label, total }) => (
   </Flex>
 );
 
-const IncomeTab = ({ values: v, onChange }) => {
+const StatRow = ({ label, value, color }) => (
+  <Flex justify="between" align="center">
+    <Text>{label}</Text>
+    <Text format={{ fontWeight: "bold", ...(color ? { color } : {}) }}>{value}</Text>
+  </Flex>
+);
+
+const TabFooter = ({ onReset, notes, onNotesChange }) => (
+  <Flex direction="column" gap="sm">
+    <Divider />
+    <TextArea
+      label="Notes"
+      name="notes"
+      value={notes || ""}
+      onChange={(val) => onNotesChange("notes", val)}
+      placeholder="Add notes for this section..."
+    />
+    <Flex justify="end">
+      <Button variant="secondary" onClick={onReset}>Clear All</Button>
+    </Flex>
+  </Flex>
+);
+
+// ── Income Tab ────────────────────────────────────────────────────────────────
+
+const IncomeTab = ({ values: v, onChange, onReset }) => {
   const primaryTotal = toNum(v.primary_wages) + toNum(v.primary_social_security) + toNum(v.primary_pension);
   const spouseTotal = toNum(v.spouse_wages) + toNum(v.spouse_social_security) + toNum(v.spouse_pension);
   const rentalNet = toNum(v.rental_income) - toNum(v.rental_expenses);
-  const totalMonthly =
-    primaryTotal + spouseTotal + toNum(v.dividends_interest) + rentalNet +
-    toNum(v.distributions_k1) + toNum(v.alimony) + toNum(v.child_support) +
-    toNum(v.other_subsidy) + toNum(v.other_income_1) + toNum(v.other_income_2);
+  const totalMonthly = calcIncomeTotal(v);
 
   const simpleRows = [
     { label: "Distributions (K-1)", key: "distributions_k1" },
     { label: "Alimony", key: "alimony" },
     { label: "Child Support", key: "child_support" },
     { label: "Other (Rent subsidy, Oil credit, etc.)", key: "other_subsidy" },
-    { label: "Other Income", key: "other_income_1" },
-    { label: "Other Income", key: "other_income_2" },
+    { label: "Other Income 1", key: "other_income_1" },
+    { label: "Other Income 2", key: "other_income_2" },
   ];
 
   return (
@@ -243,13 +331,14 @@ const IncomeTab = ({ values: v, onChange }) => {
 
       <Divider />
       <SectionTotal label="Total Monthly Income:" total={totalMonthly} />
+      <TabFooter onReset={onReset} notes={v.notes} onNotesChange={onChange} />
     </Flex>
   );
 };
 
 // ── Expenses Tab ──────────────────────────────────────────────────────────────
 
-const ExpensesTab = ({ values: v, onChange }) => {
+const ExpensesTab = ({ values: v, onChange, onReset }) => {
   const Row = ({ label, fieldKey }) => (
     <Flex align="center" justify="between">
       <Flex align="center" gap="xs"><Dot /><Text>{label}</Text></Flex>
@@ -315,16 +404,14 @@ const ExpensesTab = ({ values: v, onChange }) => {
 
       <Divider />
       <SectionTotal label="Total Monthly Expenses:" total={grandTotal} />
+      <TabFooter onReset={onReset} notes={v.notes} onNotesChange={onChange} />
     </Flex>
   );
 };
 
 // ── Assets Tab ────────────────────────────────────────────────────────────────
 
-const AssetsTab = ({ values: v, onChange }) => {
-  const calcEquity = (value, qs, loan) =>
-    toNum(value) * (toNum(qs) / 100) - toNum(loan);
-
+const AssetsTab = ({ values: v, onChange, onReset }) => {
   const simpleAssets = [
     { label: "Bank Accounts", key: "bank_accounts" },
     { label: "Cash on Hand", key: "cash_on_hand" },
@@ -343,12 +430,7 @@ const AssetsTab = ({ values: v, onChange }) => {
     { label: "Other Assets", key: "other_assets" },
   ];
 
-  const totalSimple = simpleAssets.reduce((sum, { key }) => sum + toNum(v[key]), 0);
-  const totalQS = qsAssets.reduce(
-    (sum, { key }) => sum + calcEquity(v[key], v[`${key}_qs`], v[`${key}_loan`]),
-    0
-  );
-  const totalAssets = totalSimple + totalQS;
+  const totalAssets = calcAssetsTotal(v);
 
   return (
     <Flex direction="column" gap="sm">
@@ -357,10 +439,7 @@ const AssetsTab = ({ values: v, onChange }) => {
 
       {simpleAssets.map(({ label, key }) => (
         <Flex key={key} align="center" justify="between">
-          <Flex align="center" gap="xs">
-            <Dot />
-            <Text>{label}</Text>
-          </Flex>
+          <Flex align="center" gap="xs"><Dot /><Text>{label}</Text></Flex>
           <Flex align="center" gap="sm">
             <NumberInput label="Market Value" name={key} value={v[key]} onChange={(val) => onChange(key, val)} prefix="$" />
             <Text format={{ fontWeight: "bold" }}>Equity: {fmt(toNum(v[key]))}</Text>
@@ -370,10 +449,7 @@ const AssetsTab = ({ values: v, onChange }) => {
 
       {qsAssets.map(({ label, key }) => (
         <Flex key={key} align="end" justify="between">
-          <Flex align="center" gap="xs">
-            <Dot />
-            <Text>{label}</Text>
-          </Flex>
+          <Flex align="center" gap="xs"><Dot /><Text>{label}</Text></Flex>
           <Flex align="end" gap="xs">
             <NumberInput label="Market Value" name={key} value={v[key]} onChange={(val) => onChange(key, val)} prefix="$" />
             <Select
@@ -393,6 +469,43 @@ const AssetsTab = ({ values: v, onChange }) => {
 
       <Divider />
       <SectionTotal label="Total Personal Asset Value:" total={totalAssets} />
+      <TabFooter onReset={onReset} notes={v.notes} onNotesChange={onChange} />
+    </Flex>
+  );
+};
+
+// ── Summary Tab ───────────────────────────────────────────────────────────────
+
+const SummaryTab = ({ income, expenses, assets }) => {
+  const totalIncome = calcIncomeTotal(income);
+  const totalExpenses = calcExpensesTotal(expenses);
+  const totalAssets = calcAssetsTotal(assets);
+  const netCashFlow = totalIncome - totalExpenses;
+  const dti = totalIncome > 0 ? (totalExpenses / totalIncome) * 100 : 0;
+
+  return (
+    <Flex direction="column" gap="sm">
+      {netCashFlow < 0 && (
+        <Alert title="Expenses Exceed Income" variant="error">
+          Monthly expenses exceed income by {fmt(Math.abs(netCashFlow))}
+        </Alert>
+      )}
+
+      <Text format={{ fontWeight: "bold" }}>Monthly Overview</Text>
+      <Divider />
+      <StatRow label="Total Monthly Income" value={fmt(totalIncome)} />
+      <StatRow label="Total Monthly Expenses" value={fmt(totalExpenses)} />
+      <StatRow
+        label="Net Monthly Cash Flow"
+        value={fmt(netCashFlow)}
+        color={netCashFlow >= 0 ? "success" : "alert"}
+      />
+      <StatRow label="Debt-to-Income Ratio" value={fmtPct(dti)} />
+
+      <Text format={{ fontWeight: "bold" }}>Assets</Text>
+      <Divider />
+      <StatRow label="Total Asset Value" value={fmt(totalAssets)} />
+      <StatRow label="Net Worth (Assets − Monthly Expenses)" value={fmt(totalAssets - totalExpenses)} />
     </Flex>
   );
 };
