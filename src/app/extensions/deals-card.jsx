@@ -110,6 +110,7 @@ const FinancialCalculators = ({ context, runServerlessFunction }) => {
     <Flex direction="column" gap="sm">
       {saving && <Text format={{ color: "medium" }}>Saving...</Text>}
       {saveError && <Alert title="Save Error" variant="error">{saveError}</Alert>}
+      <Alert title="DEBUG props">assets={String(props?.source_of_assets_calculator)}</Alert>
 
       <Tabs defaultSelected="income">
         <Tab tabId="income" title="Monthly Income">
