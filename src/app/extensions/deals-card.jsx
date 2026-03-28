@@ -103,21 +103,20 @@ const FinancialCalculators = ({ context, runServerlessFunction }) => {
     return () => clearTimeout(timeout);
   }, []);
 
-  const handleChange = (propertyName, setter, key, val) => {
-    setter((prev) => {
-      const updated = { ...prev, [key]: val };
-      setSaving(true);
-      setSaveError(null);
-      runServerlessFunction({
-        name: "saveIncomeProperty",
-        parameters: { propertyName, data: updated, objectId },
-        callback: (result) => {
-          setSaving(false);
-          const response = result?.response ?? result;
-          if (response?.status === "error") setSaveError(response.message);
-        },
-      });
-      return updated;
+  const handleChange = (propertyName, currentValues, setter, key, val) => {
+    const updated = { ...currentValues, [key]: val };
+    setter(updated);
+    setSaving(true);
+    setSaveError(null);
+
+    runServerlessFunction({
+      name: "saveIncomeProperty",
+      parameters: { propertyName, data: updated, objectId },
+      callback: (result) => {
+        setSaving(false);
+        const response = result?.response ?? result;
+        if (response?.status === "error") setSaveError(response.message);
+      },
     });
   };
 
@@ -139,7 +138,7 @@ const FinancialCalculators = ({ context, runServerlessFunction }) => {
           <IncomeTab
             values={incomeValues}
             onChange={(key, val) =>
-              handleChange("source_of_income_calculator", setIncomeValues, key, val)
+              handleChange("source_of_income_calculator", incomeValues, setIncomeValues, key, val)
             }
           />
         </Tab>
@@ -147,7 +146,7 @@ const FinancialCalculators = ({ context, runServerlessFunction }) => {
           <ExpensesTab
             values={expenseValues}
             onChange={(key, val) =>
-              handleChange("source_of_expenses_calculator", setExpenseValues, key, val)
+              handleChange("source_of_expenses_calculator", expenseValues, setExpenseValues, key, val)
             }
           />
         </Tab>
@@ -155,7 +154,7 @@ const FinancialCalculators = ({ context, runServerlessFunction }) => {
           <AssetsTab
             values={assetValues}
             onChange={(key, val) =>
-              handleChange("source_of_assets_calculator", setAssetValues, key, val)
+              handleChange("source_of_assets_calculator", assetValues, setAssetValues, key, val)
             }
           />
         </Tab>
