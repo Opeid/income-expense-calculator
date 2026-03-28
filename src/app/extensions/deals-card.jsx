@@ -103,10 +103,13 @@ const FinancialCalculators = ({ context, runServerlessFunction, actions }) => {
     setSaving(true);
     setSaveError(null);
 
+    const fallback = setTimeout(() => setSaving(false), 3000);
+
     runServerlessFunction({
       name: "saveIncomeProperty",
       parameters: { propertyName, data: updated, objectId },
       callback: (result) => {
+        clearTimeout(fallback);
         setSaving(false);
         const response = result?.response ?? result;
         if (response?.status === "error") setSaveError(response.message);
