@@ -229,7 +229,10 @@ const SectionTotal = ({ label, total }) => (
 const StatRow = ({ label, value, color }) => (
   <Flex justify="between" align="center">
     <Text>{label}</Text>
-    <Text format={{ fontWeight: "bold", ...(color ? { color } : {}) }}>{value}</Text>
+    {color
+      ? <Text format={{ fontWeight: "bold", color }}>{value}</Text>
+      : <Text format={{ fontWeight: "bold" }}>{value}</Text>
+    }
   </Flex>
 );
 
