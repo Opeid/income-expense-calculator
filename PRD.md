@@ -66,7 +66,6 @@ Calculates total monthly income across all sources.
 
 **Footer**
 - Total Monthly Income (sum of all sources)
-- Notes field (free-text)
 - Clear All button
 
 ---
@@ -115,7 +114,6 @@ Captures monthly expenses across five categories with section totals and a grand
 **Footer**
 - Section totals displayed after each category
 - Total Monthly Expenses (grand total)
-- Notes field (free-text)
 - Clear All button
 
 ---
@@ -145,7 +143,6 @@ Assets:
 
 **Footer**
 - Total Personal Asset Value
-- Notes field (free-text)
 - Clear All button
 
 ---
@@ -163,8 +160,6 @@ Provides a real-time financial snapshot computed from the other three tabs. No d
 | Total Asset Value | Sum of all asset equity values |
 | Net Worth | Total Assets − Monthly Expenses |
 
-**Alert:** If monthly expenses exceed monthly income, a red warning banner is shown: *"Monthly expenses exceed income by $X.XX"*
-
 ---
 
 ### 3.5 Auto-Save
@@ -177,13 +172,7 @@ Provides a real-time financial snapshot computed from the other three tabs. No d
 
 ---
 
-### 3.6 Notes
-
-Each tab includes a free-text Notes field. Notes are saved as part of the same JSON blob as the numeric values, so no additional HubSpot properties are needed.
-
----
-
-### 3.7 Clear All
+### 3.6 Clear All
 
 Each tab has a **Clear All** button that resets all fields (including notes) on that tab to zero/empty and immediately saves the cleared state to HubSpot.
 
