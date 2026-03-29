@@ -508,16 +508,16 @@ const SummaryTab = ({ income, expenses, assets }) => {
       <Flex justify="between" align="center">
         <Text>Net Monthly Cash Flow</Text>
         {netCashFlow >= 0
-          ? <Text format={{ fontWeight: "bold", color: "success" }}>{fmt(netCashFlow)}</Text>
-          : <Text format={{ fontWeight: "bold", color: "alert" }}>{fmt(netCashFlow)}</Text>
+          ? <Text format={{ fontWeight: "bold", color: "#2d8a4e" }}>{fmt(netCashFlow)}</Text>
+          : <Text format={{ fontWeight: "bold", color: "#c0392b" }}>{fmt(netCashFlow)}</Text>
         }
       </Flex>
 
       <Flex justify="between" align="center">
         <Text>Debt-to-Income Ratio</Text>
         {dti <= 36
-          ? <Text format={{ fontWeight: "bold", color: "success" }}>{fmtPct(dti)}</Text>
-          : <Text format={{ fontWeight: "bold", color: "alert" }}>{fmtPct(dti)}</Text>
+          ? <Text format={{ fontWeight: "bold", color: "#2d8a4e" }}>{fmtPct(dti)}</Text>
+          : <Text format={{ fontWeight: "bold", color: "#c0392b" }}>{fmtPct(dti)}</Text>
         }
       </Flex>
 
@@ -528,8 +528,8 @@ const SummaryTab = ({ income, expenses, assets }) => {
       <Flex justify="between" align="center">
         <Text>Net Worth (Assets − Monthly Expenses)</Text>
         {netWorth >= 0
-          ? <Text format={{ fontWeight: "bold", color: "success" }}>{fmt(netWorth)}</Text>
-          : <Text format={{ fontWeight: "bold", color: "alert" }}>{fmt(netWorth)}</Text>
+          ? <Text format={{ fontWeight: "bold", color: "#2d8a4e" }}>{fmt(netWorth)}</Text>
+          : <Text format={{ fontWeight: "bold", color: "#c0392b" }}>{fmt(netWorth)}</Text>
         }
       </Flex>
     </Flex>
