@@ -4,6 +4,7 @@ import {
   Button,
   Divider,
   Flex,
+  Input,
   NumberInput,
   Select,
   Tab,
@@ -41,15 +42,29 @@ const INCOME_DEFAULTS = {
 };
 
 const EXPENSE_DEFAULTS = {
+  // Food, Clothing & Misc
   food: 0, housekeeping_supplies: 0, apparel_services: 0,
   personal_care: 0, miscellaneous: 0,
+  // Housing
   mortgage_1: 0, mortgage_2: 0, rent: 0, homeowner_insurance: 0,
   property_tax: 0, gas: 0, electricity: 0, water: 0,
-  cable_internet_phone: 0, other_housing: 0,
+  sewer: 0, cable_internet_phone: 0, trash: 0, phone: 0, other_housing: 0,
+  // Transportation
   vehicle_payment_1: 0, vehicle_payment_2: 0, car_insurance: 0,
   gas_oil: 0, parking_tolls: 0, public_transportation: 0,
-  health_insurance: 0, out_of_pocket_medical: 0, prescription: 0,
-  child_care: 0, life_insurance_expense: 0, other_expenses: 0,
+  // Health Care
+  health_insurance: 0, out_of_pocket_medical: 0, prescription: 0, copays: 0,
+  // Taxes
+  taxes: 0,
+  // Other Expenses
+  court_ordered_payments: 0, child_care: 0,
+  life_insurance_expense: 0, term_life_insurance: 0,
+  custom_1_name: "", custom_1_amount: 0,
+  custom_2_name: "", custom_2_amount: 0,
+  custom_3_name: "", custom_3_amount: 0,
+  custom_4_name: "", custom_4_amount: 0,
+  custom_5_name: "", custom_5_amount: 0,
+  custom_6_name: "", custom_6_amount: 0,
 };
 
 const ASSET_DEFAULTS = {
@@ -90,11 +105,15 @@ const calcExpensesTotal = (v) =>
   toNum(v.personal_care) + toNum(v.miscellaneous) +
   toNum(v.mortgage_1) + toNum(v.mortgage_2) + toNum(v.rent) + toNum(v.homeowner_insurance) +
   toNum(v.property_tax) + toNum(v.gas) + toNum(v.electricity) + toNum(v.water) +
-  toNum(v.cable_internet_phone) + toNum(v.other_housing) +
+  toNum(v.sewer) + toNum(v.cable_internet_phone) + toNum(v.trash) + toNum(v.phone) + toNum(v.other_housing) +
   toNum(v.vehicle_payment_1) + toNum(v.vehicle_payment_2) + toNum(v.car_insurance) +
   toNum(v.gas_oil) + toNum(v.parking_tolls) + toNum(v.public_transportation) +
-  toNum(v.health_insurance) + toNum(v.out_of_pocket_medical) + toNum(v.prescription) +
-  toNum(v.child_care) + toNum(v.life_insurance_expense) + toNum(v.other_expenses);
+  toNum(v.health_insurance) + toNum(v.out_of_pocket_medical) + toNum(v.prescription) + toNum(v.copays) +
+  toNum(v.taxes) +
+  toNum(v.court_ordered_payments) + toNum(v.child_care) +
+  toNum(v.life_insurance_expense) + toNum(v.term_life_insurance) +
+  toNum(v.custom_1_amount) + toNum(v.custom_2_amount) + toNum(v.custom_3_amount) +
+  toNum(v.custom_4_amount) + toNum(v.custom_5_amount) + toNum(v.custom_6_amount);
 
 const calcEquity = (value, qs, loan) => toNum(value) * (toNum(qs) / 100) - toNum(loan);
 
@@ -118,7 +137,7 @@ const FinancialCalculators = ({ context, runServerlessFunction, actions }) => {
   const [saving, setSaving] = useState(false);
   const [saveError, setSaveError] = useState(null);
   const [lastSaved, setLastSaved] = useState(null);
-  const [expenseSections, setExpenseSections] = useState({ food: true, housing: true, transport: true, health: true, other: true });
+  const [expenseSections, setExpenseSections] = useState({ food: true, housing: true, transport: true, health: true, taxes: true, other: true });
   const toggleSection = (key) => setExpenseSections((prev) => ({ ...prev, [key]: !prev[key] }));
 
   useEffect(() => {
@@ -351,13 +370,16 @@ const ExpenseSectionHeader = ({ label, sectionKey, total, isOpen, onToggle }) =>
 );
 
 const ExpensesTab = ({ values: v, open, onToggle, onChange, onReset }) => {
-
   const foodTotal = toNum(v.food) + toNum(v.housekeeping_supplies) + toNum(v.apparel_services) + toNum(v.personal_care) + toNum(v.miscellaneous);
-  const housingTotal = toNum(v.mortgage_1) + toNum(v.mortgage_2) + toNum(v.rent) + toNum(v.homeowner_insurance) + toNum(v.property_tax) + toNum(v.gas) + toNum(v.electricity) + toNum(v.water) + toNum(v.cable_internet_phone) + toNum(v.other_housing);
+  const housingTotal = toNum(v.mortgage_1) + toNum(v.mortgage_2) + toNum(v.rent) + toNum(v.homeowner_insurance) + toNum(v.property_tax) + toNum(v.gas) + toNum(v.electricity) + toNum(v.water) + toNum(v.sewer) + toNum(v.cable_internet_phone) + toNum(v.trash) + toNum(v.phone) + toNum(v.other_housing);
   const transportTotal = toNum(v.vehicle_payment_1) + toNum(v.vehicle_payment_2) + toNum(v.car_insurance) + toNum(v.gas_oil) + toNum(v.parking_tolls) + toNum(v.public_transportation);
-  const healthTotal = toNum(v.health_insurance) + toNum(v.out_of_pocket_medical) + toNum(v.prescription);
-  const otherTotal = toNum(v.child_care) + toNum(v.life_insurance_expense) + toNum(v.other_expenses);
-  const grandTotal = foodTotal + housingTotal + transportTotal + healthTotal + otherTotal;
+  const healthTotal = toNum(v.health_insurance) + toNum(v.out_of_pocket_medical) + toNum(v.prescription) + toNum(v.copays);
+  const taxesTotal = toNum(v.taxes);
+  const customTotal = toNum(v.custom_1_amount) + toNum(v.custom_2_amount) + toNum(v.custom_3_amount) + toNum(v.custom_4_amount) + toNum(v.custom_5_amount) + toNum(v.custom_6_amount);
+  const otherTotal = toNum(v.court_ordered_payments) + toNum(v.child_care) + toNum(v.life_insurance_expense) + toNum(v.term_life_insurance) + customTotal;
+  const grandTotal = foodTotal + housingTotal + transportTotal + healthTotal + taxesTotal + otherTotal;
+
+  const customRows = [1, 2, 3, 4, 5, 6];
 
   return (
     <Flex direction="column" gap="sm">
@@ -383,7 +405,10 @@ const ExpensesTab = ({ values: v, open, onToggle, onChange, onReset }) => {
         <ExpenseRow label="Gas" fieldKey="gas" value={v.gas} onChange={onChange} />
         <ExpenseRow label="Electricity" fieldKey="electricity" value={v.electricity} onChange={onChange} />
         <ExpenseRow label="Water" fieldKey="water" value={v.water} onChange={onChange} />
-        <ExpenseRow label="Cable / Internet / Phone" fieldKey="cable_internet_phone" value={v.cable_internet_phone} onChange={onChange} />
+        <ExpenseRow label="Sewer" fieldKey="sewer" value={v.sewer} onChange={onChange} />
+        <ExpenseRow label="Cable / Internet" fieldKey="cable_internet_phone" value={v.cable_internet_phone} onChange={onChange} />
+        <ExpenseRow label="Trash" fieldKey="trash" value={v.trash} onChange={onChange} />
+        <ExpenseRow label="Phone" fieldKey="phone" value={v.phone} onChange={onChange} />
         <ExpenseRow label="Other Housing" fieldKey="other_housing" value={v.other_housing} onChange={onChange} />
         <SectionTotal label="Total Housing & Utilities:" total={housingTotal} />
       </>}
@@ -406,15 +431,39 @@ const ExpensesTab = ({ values: v, open, onToggle, onChange, onReset }) => {
         <ExpenseRow label="Health Insurance" fieldKey="health_insurance" value={v.health_insurance} onChange={onChange} />
         <ExpenseRow label="Out-of-Pocket Medical" fieldKey="out_of_pocket_medical" value={v.out_of_pocket_medical} onChange={onChange} />
         <ExpenseRow label="Prescription Drugs" fieldKey="prescription" value={v.prescription} onChange={onChange} />
+        <ExpenseRow label="Copays" fieldKey="copays" value={v.copays} onChange={onChange} />
         <SectionTotal label="Total Health Care:" total={healthTotal} />
       </>}
 
-      <ExpenseSectionHeader label="Other Monthly Expenses" sectionKey="other" total={otherTotal} isOpen={open.other} onToggle={onToggle} />
+      <ExpenseSectionHeader label="Taxes" sectionKey="taxes" total={taxesTotal} isOpen={open.taxes} onToggle={onToggle} />
+      <Divider />
+      {open.taxes && <>
+        <ExpenseRow label="Total Federal, State & Local Taxes" fieldKey="taxes" value={v.taxes} onChange={onChange} />
+        <SectionTotal label="Total Taxes:" total={taxesTotal} />
+      </>}
+
+      <ExpenseSectionHeader label="Other Expenses" sectionKey="other" total={otherTotal} isOpen={open.other} onToggle={onToggle} />
       <Divider />
       {open.other && <>
+        <ExpenseRow label="Court Ordered Payments" fieldKey="court_ordered_payments" value={v.court_ordered_payments} onChange={onChange} />
         <ExpenseRow label="Child / Dependent Care" fieldKey="child_care" value={v.child_care} onChange={onChange} />
-        <ExpenseRow label="Life Insurance" fieldKey="life_insurance_expense" value={v.life_insurance_expense} onChange={onChange} />
-        <ExpenseRow label="Other" fieldKey="other_expenses" value={v.other_expenses} onChange={onChange} />
+        <ExpenseRow label="Whole Life Insurance Policy" fieldKey="life_insurance_expense" value={v.life_insurance_expense} onChange={onChange} />
+        <ExpenseRow label="Term Life Insurance Policy" fieldKey="term_life_insurance" value={v.term_life_insurance} onChange={onChange} />
+        {customRows.map((i) => (
+          <Flex key={i} align="center" justify="between">
+            <Flex align="center" gap="xs">
+              <Dot />
+              <Input
+                label=""
+                name={`custom_${i}_name`}
+                value={v[`custom_${i}_name`] || ""}
+                onChange={(val) => onChange(`custom_${i}_name`, val)}
+                placeholder="Enter Expense Name"
+              />
+            </Flex>
+            <NumberInput label="" name={`custom_${i}_amount`} value={v[`custom_${i}_amount`]} onChange={(val) => onChange(`custom_${i}_amount`, val)} prefix="$" />
+          </Flex>
+        ))}
         <SectionTotal label="Total Other Expenses:" total={otherTotal} />
       </>}
 
