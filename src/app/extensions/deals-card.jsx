@@ -330,25 +330,25 @@ const IncomeTab = ({ values: v, onChange, onReset }) => {
 
 // ── Expenses Tab ──────────────────────────────────────────────────────────────
 
+const ExpenseRow = ({ label, fieldKey, value, onChange }) => (
+  <Flex align="center" justify="between">
+    <Flex align="center" gap="xs"><Dot /><Text>{label}</Text></Flex>
+    <NumberInput label="" name={fieldKey} value={value} onChange={(val) => onChange(fieldKey, val)} prefix="$" />
+  </Flex>
+);
+
+const ExpenseSectionHeader = ({ label, sectionKey, total, isOpen, onToggle }) => (
+  <Flex justify="between" align="center">
+    <Button variant="transparent" onClick={() => onToggle(sectionKey)}>
+      <Text format={{ fontWeight: "bold" }}>{isOpen ? "▼" : "▶"} {label}</Text>
+    </Button>
+    {!isOpen && <Text format={{ fontWeight: "bold" }}>{fmt(total)}</Text>}
+  </Flex>
+);
+
 const ExpensesTab = ({ values: v, onChange, onReset }) => {
   const [open, setOpen] = useState({ food: true, housing: true, transport: true, health: true, other: true });
   const toggle = (key) => setOpen((prev) => ({ ...prev, [key]: !prev[key] }));
-
-  const Row = ({ label, fieldKey }) => (
-    <Flex align="center" justify="between">
-      <Flex align="center" gap="xs"><Dot /><Text>{label}</Text></Flex>
-      <NumberInput label="" name={fieldKey} value={v[fieldKey]} onChange={(val) => onChange(fieldKey, val)} prefix="$" />
-    </Flex>
-  );
-
-  const SectionHeader = ({ label, sectionKey, total }) => (
-    <Flex justify="between" align="center">
-      <Button variant="transparent" onClick={() => toggle(sectionKey)}>
-        <Text format={{ fontWeight: "bold" }}>{open[sectionKey] ? "▼" : "▶"} {label}</Text>
-      </Button>
-      {!open[sectionKey] && <Text format={{ fontWeight: "bold", color: "alert" }}>{fmt(total)}</Text>}
-    </Flex>
-  );
 
   const foodTotal = toNum(v.food) + toNum(v.housekeeping_supplies) + toNum(v.apparel_services) + toNum(v.personal_care) + toNum(v.miscellaneous);
   const housingTotal = toNum(v.mortgage_1) + toNum(v.mortgage_2) + toNum(v.rent) + toNum(v.homeowner_insurance) + toNum(v.property_tax) + toNum(v.gas) + toNum(v.electricity) + toNum(v.water) + toNum(v.cable_internet_phone) + toNum(v.other_housing);
@@ -359,60 +359,60 @@ const ExpensesTab = ({ values: v, onChange, onReset }) => {
 
   return (
     <Flex direction="column" gap="sm">
-      <SectionHeader label="Food, Clothing & Miscellaneous" sectionKey="food" total={foodTotal} />
+      <ExpenseSectionHeader label="Food, Clothing & Miscellaneous" sectionKey="food" total={foodTotal} isOpen={open.food} onToggle={toggle} />
       <Divider />
       {open.food && <>
-        <Row label="Food" fieldKey="food" />
-        <Row label="Housekeeping Supplies" fieldKey="housekeeping_supplies" />
-        <Row label="Apparel & Services" fieldKey="apparel_services" />
-        <Row label="Personal Care" fieldKey="personal_care" />
-        <Row label="Miscellaneous" fieldKey="miscellaneous" />
+        <ExpenseRow label="Food" fieldKey="food" value={v.food} onChange={onChange} />
+        <ExpenseRow label="Housekeeping Supplies" fieldKey="housekeeping_supplies" value={v.housekeeping_supplies} onChange={onChange} />
+        <ExpenseRow label="Apparel & Services" fieldKey="apparel_services" value={v.apparel_services} onChange={onChange} />
+        <ExpenseRow label="Personal Care" fieldKey="personal_care" value={v.personal_care} onChange={onChange} />
+        <ExpenseRow label="Miscellaneous" fieldKey="miscellaneous" value={v.miscellaneous} onChange={onChange} />
         <SectionTotal label="Total Food, Clothing & Misc:" total={foodTotal} />
       </>}
 
-      <SectionHeader label="Housing and Utilities" sectionKey="housing" total={housingTotal} />
+      <ExpenseSectionHeader label="Housing and Utilities" sectionKey="housing" total={housingTotal} isOpen={open.housing} onToggle={toggle} />
       <Divider />
       {open.housing && <>
-        <Row label="1st Lien Mortgage" fieldKey="mortgage_1" />
-        <Row label="2nd Lien Mortgage" fieldKey="mortgage_2" />
-        <Row label="Rent Payment" fieldKey="rent" />
-        <Row label="Homeowner Insurance" fieldKey="homeowner_insurance" />
-        <Row label="Property Tax" fieldKey="property_tax" />
-        <Row label="Gas" fieldKey="gas" />
-        <Row label="Electricity" fieldKey="electricity" />
-        <Row label="Water" fieldKey="water" />
-        <Row label="Cable / Internet / Phone" fieldKey="cable_internet_phone" />
-        <Row label="Other Housing" fieldKey="other_housing" />
+        <ExpenseRow label="1st Lien Mortgage" fieldKey="mortgage_1" value={v.mortgage_1} onChange={onChange} />
+        <ExpenseRow label="2nd Lien Mortgage" fieldKey="mortgage_2" value={v.mortgage_2} onChange={onChange} />
+        <ExpenseRow label="Rent Payment" fieldKey="rent" value={v.rent} onChange={onChange} />
+        <ExpenseRow label="Homeowner Insurance" fieldKey="homeowner_insurance" value={v.homeowner_insurance} onChange={onChange} />
+        <ExpenseRow label="Property Tax" fieldKey="property_tax" value={v.property_tax} onChange={onChange} />
+        <ExpenseRow label="Gas" fieldKey="gas" value={v.gas} onChange={onChange} />
+        <ExpenseRow label="Electricity" fieldKey="electricity" value={v.electricity} onChange={onChange} />
+        <ExpenseRow label="Water" fieldKey="water" value={v.water} onChange={onChange} />
+        <ExpenseRow label="Cable / Internet / Phone" fieldKey="cable_internet_phone" value={v.cable_internet_phone} onChange={onChange} />
+        <ExpenseRow label="Other Housing" fieldKey="other_housing" value={v.other_housing} onChange={onChange} />
         <SectionTotal label="Total Housing & Utilities:" total={housingTotal} />
       </>}
 
-      <SectionHeader label="Transportation" sectionKey="transport" total={transportTotal} />
+      <ExpenseSectionHeader label="Transportation" sectionKey="transport" total={transportTotal} isOpen={open.transport} onToggle={toggle} />
       <Divider />
       {open.transport && <>
-        <Row label="Vehicle Lease / Payment #1" fieldKey="vehicle_payment_1" />
-        <Row label="Vehicle Lease / Payment #2" fieldKey="vehicle_payment_2" />
-        <Row label="Car Insurance" fieldKey="car_insurance" />
-        <Row label="Gas & Oil" fieldKey="gas_oil" />
-        <Row label="Parking & Tolls" fieldKey="parking_tolls" />
-        <Row label="Public Transportation" fieldKey="public_transportation" />
+        <ExpenseRow label="Vehicle Lease / Payment #1" fieldKey="vehicle_payment_1" value={v.vehicle_payment_1} onChange={onChange} />
+        <ExpenseRow label="Vehicle Lease / Payment #2" fieldKey="vehicle_payment_2" value={v.vehicle_payment_2} onChange={onChange} />
+        <ExpenseRow label="Car Insurance" fieldKey="car_insurance" value={v.car_insurance} onChange={onChange} />
+        <ExpenseRow label="Gas & Oil" fieldKey="gas_oil" value={v.gas_oil} onChange={onChange} />
+        <ExpenseRow label="Parking & Tolls" fieldKey="parking_tolls" value={v.parking_tolls} onChange={onChange} />
+        <ExpenseRow label="Public Transportation" fieldKey="public_transportation" value={v.public_transportation} onChange={onChange} />
         <SectionTotal label="Total Transportation:" total={transportTotal} />
       </>}
 
-      <SectionHeader label="Health Care" sectionKey="health" total={healthTotal} />
+      <ExpenseSectionHeader label="Health Care" sectionKey="health" total={healthTotal} isOpen={open.health} onToggle={toggle} />
       <Divider />
       {open.health && <>
-        <Row label="Health Insurance" fieldKey="health_insurance" />
-        <Row label="Out-of-Pocket Medical" fieldKey="out_of_pocket_medical" />
-        <Row label="Prescription Drugs" fieldKey="prescription" />
+        <ExpenseRow label="Health Insurance" fieldKey="health_insurance" value={v.health_insurance} onChange={onChange} />
+        <ExpenseRow label="Out-of-Pocket Medical" fieldKey="out_of_pocket_medical" value={v.out_of_pocket_medical} onChange={onChange} />
+        <ExpenseRow label="Prescription Drugs" fieldKey="prescription" value={v.prescription} onChange={onChange} />
         <SectionTotal label="Total Health Care:" total={healthTotal} />
       </>}
 
-      <SectionHeader label="Other Monthly Expenses" sectionKey="other" total={otherTotal} />
+      <ExpenseSectionHeader label="Other Monthly Expenses" sectionKey="other" total={otherTotal} isOpen={open.other} onToggle={toggle} />
       <Divider />
       {open.other && <>
-        <Row label="Child / Dependent Care" fieldKey="child_care" />
-        <Row label="Life Insurance" fieldKey="life_insurance_expense" />
-        <Row label="Other" fieldKey="other_expenses" />
+        <ExpenseRow label="Child / Dependent Care" fieldKey="child_care" value={v.child_care} onChange={onChange} />
+        <ExpenseRow label="Life Insurance" fieldKey="life_insurance_expense" value={v.life_insurance_expense} onChange={onChange} />
+        <ExpenseRow label="Other" fieldKey="other_expenses" value={v.other_expenses} onChange={onChange} />
         <SectionTotal label="Total Other Expenses:" total={otherTotal} />
       </>}
 
