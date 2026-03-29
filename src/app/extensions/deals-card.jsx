@@ -328,10 +328,22 @@ const IncomeTab = ({ values: v, onChange, onReset }) => {
 // ── Expenses Tab ──────────────────────────────────────────────────────────────
 
 const ExpensesTab = ({ values: v, onChange, onReset }) => {
+  const [open, setOpen] = useState({ food: true, housing: true, transport: true, health: true, other: true });
+  const toggle = (key) => setOpen((prev) => ({ ...prev, [key]: !prev[key] }));
+
   const Row = ({ label, fieldKey }) => (
     <Flex align="center" justify="between">
       <Flex align="center" gap="xs"><Dot /><Text>{label}</Text></Flex>
       <NumberInput label="" name={fieldKey} value={v[fieldKey]} onChange={(val) => onChange(fieldKey, val)} prefix="$" />
+    </Flex>
+  );
+
+  const SectionHeader = ({ label, sectionKey, total }) => (
+    <Flex justify="between" align="center">
+      <Button variant="transparent" onClick={() => toggle(sectionKey)}>
+        <Text format={{ fontWeight: "bold" }}>{open[sectionKey] ? "▼" : "▶"} {label}</Text>
+      </Button>
+      {!open[sectionKey] && <Text format={{ fontWeight: "bold", color: "alert" }}>{fmt(total)}</Text>}
     </Flex>
   );
 
@@ -344,52 +356,62 @@ const ExpensesTab = ({ values: v, onChange, onReset }) => {
 
   return (
     <Flex direction="column" gap="sm">
-      <Text format={{ fontWeight: "bold" }}>Food, Clothing & Miscellaneous</Text>
+      <SectionHeader label="Food, Clothing & Miscellaneous" sectionKey="food" total={foodTotal} />
       <Divider />
-      <Row label="Food" fieldKey="food" />
-      <Row label="Housekeeping Supplies" fieldKey="housekeeping_supplies" />
-      <Row label="Apparel & Services" fieldKey="apparel_services" />
-      <Row label="Personal Care" fieldKey="personal_care" />
-      <Row label="Miscellaneous" fieldKey="miscellaneous" />
-      <SectionTotal label="Total Food, Clothing & Misc:" total={foodTotal} />
+      {open.food && <>
+        <Row label="Food" fieldKey="food" />
+        <Row label="Housekeeping Supplies" fieldKey="housekeeping_supplies" />
+        <Row label="Apparel & Services" fieldKey="apparel_services" />
+        <Row label="Personal Care" fieldKey="personal_care" />
+        <Row label="Miscellaneous" fieldKey="miscellaneous" />
+        <SectionTotal label="Total Food, Clothing & Misc:" total={foodTotal} />
+      </>}
 
-      <Text format={{ fontWeight: "bold" }}>Housing and Utilities</Text>
+      <SectionHeader label="Housing and Utilities" sectionKey="housing" total={housingTotal} />
       <Divider />
-      <Row label="1st Lien Mortgage" fieldKey="mortgage_1" />
-      <Row label="2nd Lien Mortgage" fieldKey="mortgage_2" />
-      <Row label="Rent Payment" fieldKey="rent" />
-      <Row label="Homeowner Insurance" fieldKey="homeowner_insurance" />
-      <Row label="Property Tax" fieldKey="property_tax" />
-      <Row label="Gas" fieldKey="gas" />
-      <Row label="Electricity" fieldKey="electricity" />
-      <Row label="Water" fieldKey="water" />
-      <Row label="Cable / Internet / Phone" fieldKey="cable_internet_phone" />
-      <Row label="Other Housing" fieldKey="other_housing" />
-      <SectionTotal label="Total Housing & Utilities:" total={housingTotal} />
+      {open.housing && <>
+        <Row label="1st Lien Mortgage" fieldKey="mortgage_1" />
+        <Row label="2nd Lien Mortgage" fieldKey="mortgage_2" />
+        <Row label="Rent Payment" fieldKey="rent" />
+        <Row label="Homeowner Insurance" fieldKey="homeowner_insurance" />
+        <Row label="Property Tax" fieldKey="property_tax" />
+        <Row label="Gas" fieldKey="gas" />
+        <Row label="Electricity" fieldKey="electricity" />
+        <Row label="Water" fieldKey="water" />
+        <Row label="Cable / Internet / Phone" fieldKey="cable_internet_phone" />
+        <Row label="Other Housing" fieldKey="other_housing" />
+        <SectionTotal label="Total Housing & Utilities:" total={housingTotal} />
+      </>}
 
-      <Text format={{ fontWeight: "bold" }}>Transportation</Text>
+      <SectionHeader label="Transportation" sectionKey="transport" total={transportTotal} />
       <Divider />
-      <Row label="Vehicle Lease / Payment #1" fieldKey="vehicle_payment_1" />
-      <Row label="Vehicle Lease / Payment #2" fieldKey="vehicle_payment_2" />
-      <Row label="Car Insurance" fieldKey="car_insurance" />
-      <Row label="Gas & Oil" fieldKey="gas_oil" />
-      <Row label="Parking & Tolls" fieldKey="parking_tolls" />
-      <Row label="Public Transportation" fieldKey="public_transportation" />
-      <SectionTotal label="Total Transportation:" total={transportTotal} />
+      {open.transport && <>
+        <Row label="Vehicle Lease / Payment #1" fieldKey="vehicle_payment_1" />
+        <Row label="Vehicle Lease / Payment #2" fieldKey="vehicle_payment_2" />
+        <Row label="Car Insurance" fieldKey="car_insurance" />
+        <Row label="Gas & Oil" fieldKey="gas_oil" />
+        <Row label="Parking & Tolls" fieldKey="parking_tolls" />
+        <Row label="Public Transportation" fieldKey="public_transportation" />
+        <SectionTotal label="Total Transportation:" total={transportTotal} />
+      </>}
 
-      <Text format={{ fontWeight: "bold" }}>Health Care</Text>
+      <SectionHeader label="Health Care" sectionKey="health" total={healthTotal} />
       <Divider />
-      <Row label="Health Insurance" fieldKey="health_insurance" />
-      <Row label="Out-of-Pocket Medical" fieldKey="out_of_pocket_medical" />
-      <Row label="Prescription Drugs" fieldKey="prescription" />
-      <SectionTotal label="Total Health Care:" total={healthTotal} />
+      {open.health && <>
+        <Row label="Health Insurance" fieldKey="health_insurance" />
+        <Row label="Out-of-Pocket Medical" fieldKey="out_of_pocket_medical" />
+        <Row label="Prescription Drugs" fieldKey="prescription" />
+        <SectionTotal label="Total Health Care:" total={healthTotal} />
+      </>}
 
-      <Text format={{ fontWeight: "bold" }}>Other Monthly Expenses</Text>
+      <SectionHeader label="Other Monthly Expenses" sectionKey="other" total={otherTotal} />
       <Divider />
-      <Row label="Child / Dependent Care" fieldKey="child_care" />
-      <Row label="Life Insurance" fieldKey="life_insurance_expense" />
-      <Row label="Other" fieldKey="other_expenses" />
-      <SectionTotal label="Total Other Expenses:" total={otherTotal} />
+      {open.other && <>
+        <Row label="Child / Dependent Care" fieldKey="child_care" />
+        <Row label="Life Insurance" fieldKey="life_insurance_expense" />
+        <Row label="Other" fieldKey="other_expenses" />
+        <SectionTotal label="Total Other Expenses:" total={otherTotal} />
+      </>}
 
       <Divider />
       <SectionTotal label="Total Monthly Expenses:" total={grandTotal} />
@@ -470,7 +492,12 @@ const SummaryTab = ({ income, expenses, assets }) => {
   const totalExpenses = calcExpensesTotal(expenses);
   const totalAssets = calcAssetsTotal(assets);
   const netCashFlow = totalIncome - totalExpenses;
+  const netWorth = totalAssets - totalExpenses;
   const dti = totalIncome > 0 ? (totalExpenses / totalIncome) * 100 : 0;
+
+  const dtiColor = dti <= 36 ? "success" : dti <= 50 ? "warning" : "alert";
+  const cashFlowColor = netCashFlow >= 0 ? "success" : "alert";
+  const netWorthColor = netWorth >= 0 ? "success" : "alert";
 
   return (
     <Flex direction="column" gap="sm">
@@ -478,17 +505,13 @@ const SummaryTab = ({ income, expenses, assets }) => {
       <Divider />
       <StatRow label="Total Monthly Income" value={fmt(totalIncome)} />
       <StatRow label="Total Monthly Expenses" value={fmt(totalExpenses)} />
-      <StatRow
-        label="Net Monthly Cash Flow"
-        value={fmt(netCashFlow)}
-        color={netCashFlow >= 0 ? "success" : "alert"}
-      />
-      <StatRow label="Debt-to-Income Ratio" value={fmtPct(dti)} />
+      <StatRow label="Net Monthly Cash Flow" value={fmt(netCashFlow)} color={cashFlowColor} />
+      <StatRow label="Debt-to-Income Ratio" value={fmtPct(dti)} color={dtiColor} />
 
       <Text format={{ fontWeight: "bold" }}>Assets</Text>
       <Divider />
       <StatRow label="Total Asset Value" value={fmt(totalAssets)} />
-      <StatRow label="Net Worth (Assets − Monthly Expenses)" value={fmt(totalAssets - totalExpenses)} />
+      <StatRow label="Net Worth (Assets − Monthly Expenses)" value={fmt(netWorth)} color={netWorthColor} />
     </Flex>
   );
 };
