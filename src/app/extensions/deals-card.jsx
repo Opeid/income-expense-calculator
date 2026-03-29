@@ -118,6 +118,8 @@ const FinancialCalculators = ({ context, runServerlessFunction, actions }) => {
   const [saving, setSaving] = useState(false);
   const [saveError, setSaveError] = useState(null);
   const [lastSaved, setLastSaved] = useState(null);
+  const [expenseSections, setExpenseSections] = useState({ food: true, housing: true, transport: true, health: true, other: true });
+  const toggleSection = (key) => setExpenseSections((prev) => ({ ...prev, [key]: !prev[key] }));
 
   useEffect(() => {
     actions.fetchCrmObjectProperties([
@@ -188,6 +190,8 @@ const FinancialCalculators = ({ context, runServerlessFunction, actions }) => {
         <Tab tabId="expenses" title="Monthly Expenses">
           <ExpensesTab
             values={expenseValues}
+            open={expenseSections}
+            onToggle={toggleSection}
             onChange={(key, val) =>
               handleChange("source_of_expenses_calculator", expenseValues, setExpenseValues, key, val)
             }
@@ -346,9 +350,7 @@ const ExpenseSectionHeader = ({ label, sectionKey, total, isOpen, onToggle }) =>
   </Flex>
 );
 
-const ExpensesTab = ({ values: v, onChange, onReset }) => {
-  const [open, setOpen] = useState({ food: true, housing: true, transport: true, health: true, other: true });
-  const toggle = (key) => setOpen((prev) => ({ ...prev, [key]: !prev[key] }));
+const ExpensesTab = ({ values: v, open, onToggle, onChange, onReset }) => {
 
   const foodTotal = toNum(v.food) + toNum(v.housekeeping_supplies) + toNum(v.apparel_services) + toNum(v.personal_care) + toNum(v.miscellaneous);
   const housingTotal = toNum(v.mortgage_1) + toNum(v.mortgage_2) + toNum(v.rent) + toNum(v.homeowner_insurance) + toNum(v.property_tax) + toNum(v.gas) + toNum(v.electricity) + toNum(v.water) + toNum(v.cable_internet_phone) + toNum(v.other_housing);
@@ -359,7 +361,7 @@ const ExpensesTab = ({ values: v, onChange, onReset }) => {
 
   return (
     <Flex direction="column" gap="sm">
-      <ExpenseSectionHeader label="Food, Clothing & Miscellaneous" sectionKey="food" total={foodTotal} isOpen={open.food} onToggle={toggle} />
+      <ExpenseSectionHeader label="Food, Clothing & Miscellaneous" sectionKey="food" total={foodTotal} isOpen={open.food} onToggle={onToggle} />
       <Divider />
       {open.food && <>
         <ExpenseRow label="Food" fieldKey="food" value={v.food} onChange={onChange} />
@@ -370,7 +372,7 @@ const ExpensesTab = ({ values: v, onChange, onReset }) => {
         <SectionTotal label="Total Food, Clothing & Misc:" total={foodTotal} />
       </>}
 
-      <ExpenseSectionHeader label="Housing and Utilities" sectionKey="housing" total={housingTotal} isOpen={open.housing} onToggle={toggle} />
+      <ExpenseSectionHeader label="Housing and Utilities" sectionKey="housing" total={housingTotal} isOpen={open.housing} onToggle={onToggle} />
       <Divider />
       {open.housing && <>
         <ExpenseRow label="1st Lien Mortgage" fieldKey="mortgage_1" value={v.mortgage_1} onChange={onChange} />
@@ -386,7 +388,7 @@ const ExpensesTab = ({ values: v, onChange, onReset }) => {
         <SectionTotal label="Total Housing & Utilities:" total={housingTotal} />
       </>}
 
-      <ExpenseSectionHeader label="Transportation" sectionKey="transport" total={transportTotal} isOpen={open.transport} onToggle={toggle} />
+      <ExpenseSectionHeader label="Transportation" sectionKey="transport" total={transportTotal} isOpen={open.transport} onToggle={onToggle} />
       <Divider />
       {open.transport && <>
         <ExpenseRow label="Vehicle Lease / Payment #1" fieldKey="vehicle_payment_1" value={v.vehicle_payment_1} onChange={onChange} />
@@ -398,7 +400,7 @@ const ExpensesTab = ({ values: v, onChange, onReset }) => {
         <SectionTotal label="Total Transportation:" total={transportTotal} />
       </>}
 
-      <ExpenseSectionHeader label="Health Care" sectionKey="health" total={healthTotal} isOpen={open.health} onToggle={toggle} />
+      <ExpenseSectionHeader label="Health Care" sectionKey="health" total={healthTotal} isOpen={open.health} onToggle={onToggle} />
       <Divider />
       {open.health && <>
         <ExpenseRow label="Health Insurance" fieldKey="health_insurance" value={v.health_insurance} onChange={onChange} />
@@ -407,7 +409,7 @@ const ExpensesTab = ({ values: v, onChange, onReset }) => {
         <SectionTotal label="Total Health Care:" total={healthTotal} />
       </>}
 
-      <ExpenseSectionHeader label="Other Monthly Expenses" sectionKey="other" total={otherTotal} isOpen={open.other} onToggle={toggle} />
+      <ExpenseSectionHeader label="Other Monthly Expenses" sectionKey="other" total={otherTotal} isOpen={open.other} onToggle={onToggle} />
       <Divider />
       {open.other && <>
         <ExpenseRow label="Child / Dependent Care" fieldKey="child_care" value={v.child_care} onChange={onChange} />
