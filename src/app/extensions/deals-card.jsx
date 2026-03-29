@@ -9,7 +9,6 @@ import {
   Tab,
   Tabs,
   Text,
-  TextArea,
   hubspot,
 } from "@hubspot/ui-extensions";
 
@@ -39,7 +38,6 @@ const INCOME_DEFAULTS = {
   dividends_interest: 0, rental_income: 0, rental_expenses: 0,
   distributions_k1: 0, alimony: 0, child_support: 0,
   other_subsidy: 0, other_income_1: 0, other_income_2: 0,
-  notes: "",
 };
 
 const EXPENSE_DEFAULTS = {
@@ -52,7 +50,6 @@ const EXPENSE_DEFAULTS = {
   gas_oil: 0, parking_tolls: 0, public_transportation: 0,
   health_insurance: 0, out_of_pocket_medical: 0, prescription: 0,
   child_care: 0, life_insurance_expense: 0, other_expenses: 0,
-  notes: "",
 };
 
 const ASSET_DEFAULTS = {
@@ -67,7 +64,6 @@ const ASSET_DEFAULTS = {
   vehicle4: 0, vehicle4_qs: "80", vehicle4_loan: 0,
   personal_effects: 0, personal_effects_qs: "80", personal_effects_loan: 0,
   other_assets: 0, other_assets_qs: "80", other_assets_loan: 0,
-  notes: "",
 };
 
 const QS_OPTIONS = [
@@ -237,16 +233,9 @@ const StatRow = ({ label, value, color }) => (
   </Flex>
 );
 
-const TabFooter = ({ onReset, notes, onNotesChange }) => (
+const TabFooter = ({ onReset }) => (
   <Flex direction="column" gap="sm">
     <Divider />
-    <TextArea
-      label="Notes"
-      name="notes"
-      value={notes || ""}
-      onChange={(val) => onNotesChange("notes", val)}
-      placeholder="Add notes for this section..."
-    />
     <Flex justify="end">
       <Button variant="secondary" onClick={onReset}>Clear All</Button>
     </Flex>
@@ -331,7 +320,7 @@ const IncomeTab = ({ values: v, onChange, onReset }) => {
 
       <Divider />
       <SectionTotal label="Total Monthly Income:" total={totalMonthly} />
-      <TabFooter onReset={onReset} notes={v.notes} onNotesChange={onChange} />
+      <TabFooter onReset={onReset} />
     </Flex>
   );
 };
@@ -404,7 +393,7 @@ const ExpensesTab = ({ values: v, onChange, onReset }) => {
 
       <Divider />
       <SectionTotal label="Total Monthly Expenses:" total={grandTotal} />
-      <TabFooter onReset={onReset} notes={v.notes} onNotesChange={onChange} />
+      <TabFooter onReset={onReset} />
     </Flex>
   );
 };
@@ -469,7 +458,7 @@ const AssetsTab = ({ values: v, onChange, onReset }) => {
 
       <Divider />
       <SectionTotal label="Total Personal Asset Value:" total={totalAssets} />
-      <TabFooter onReset={onReset} notes={v.notes} onNotesChange={onChange} />
+      <TabFooter onReset={onReset} />
     </Flex>
   );
 };
@@ -485,12 +474,6 @@ const SummaryTab = ({ income, expenses, assets }) => {
 
   return (
     <Flex direction="column" gap="sm">
-      {netCashFlow < 0 && (
-        <Alert title="Expenses Exceed Income" variant="error">
-          Monthly expenses exceed income by {fmt(Math.abs(netCashFlow))}
-        </Alert>
-      )}
-
       <Text format={{ fontWeight: "bold" }}>Monthly Overview</Text>
       <Divider />
       <StatRow label="Total Monthly Income" value={fmt(totalIncome)} />
