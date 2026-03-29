@@ -275,8 +275,8 @@ const IncomeTab = ({ values: v, onChange, onReset }) => {
       <Divider />
 
       <Text>Primary Taxpayer</Text>
-      <Flex align="end" gap="xs" justify="between">
-        <Flex align="end" gap="xs">
+      <Flex align="center" gap="xs" justify="between">
+        <Flex align="center" gap="xs">
           <Dot />
           <NumberInput label="Wages" name="primary_wages" value={v.primary_wages} onChange={(val) => onChange("primary_wages", val)} prefix="$" />
           <Text>+</Text>
@@ -289,8 +289,8 @@ const IncomeTab = ({ values: v, onChange, onReset }) => {
       </Flex>
 
       <Text>Spouse/Other contributors to the household</Text>
-      <Flex align="end" gap="xs" justify="between">
-        <Flex align="end" gap="xs">
+      <Flex align="center" gap="xs" justify="between">
+        <Flex align="center" gap="xs">
           <Dot />
           <NumberInput label="Wages" name="spouse_wages" value={v.spouse_wages} onChange={(val) => onChange("spouse_wages", val)} prefix="$" />
           <Text>+</Text>
@@ -307,8 +307,8 @@ const IncomeTab = ({ values: v, onChange, onReset }) => {
         <NumberInput label="" name="dividends_interest" value={v.dividends_interest} onChange={(val) => onChange("dividends_interest", val)} prefix="$" />
       </Flex>
 
-      <Flex align="end" gap="xs" justify="between">
-        <Flex align="end" gap="xs">
+      <Flex align="center" gap="xs" justify="between">
+        <Flex align="center" gap="xs">
           <Dot />
           <NumberInput label="Rental Income" name="rental_income" value={v.rental_income} onChange={(val) => onChange("rental_income", val)} prefix="$" />
           <Text>-</Text>
@@ -464,9 +464,9 @@ const AssetsTab = ({ values: v, onChange, onReset }) => {
       ))}
 
       {qsAssets.map(({ label, key }) => (
-        <Flex key={key} align="end" justify="between">
+        <Flex key={key} align="center" justify="between">
           <Flex align="center" gap="xs"><Dot /><Text>{label}</Text></Flex>
-          <Flex align="end" gap="xs">
+          <Flex align="center" gap="xs">
             <NumberInput label="Market Value" name={key} value={v[key]} onChange={(val) => onChange(key, val)} prefix="$" />
             <Select
               label="Quick Sale"
