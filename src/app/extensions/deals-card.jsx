@@ -498,23 +498,40 @@ const SummaryTab = ({ income, expenses, assets }) => {
   const netWorth = totalAssets - totalExpenses;
   const dti = totalIncome > 0 ? (totalExpenses / totalIncome) * 100 : 0;
 
-  const dtiColor = dti <= 36 ? "success" : dti <= 50 ? "warning" : "alert";
-  const cashFlowColor = netCashFlow >= 0 ? "success" : "alert";
-  const netWorthColor = netWorth >= 0 ? "success" : "alert";
-
   return (
     <Flex direction="column" gap="sm">
       <Text format={{ fontWeight: "bold" }}>Monthly Overview</Text>
       <Divider />
       <StatRow label="Total Monthly Income" value={fmt(totalIncome)} />
       <StatRow label="Total Monthly Expenses" value={fmt(totalExpenses)} />
-      <StatRow label="Net Monthly Cash Flow" value={fmt(netCashFlow)} color={cashFlowColor} />
-      <StatRow label="Debt-to-Income Ratio" value={fmtPct(dti)} color={dtiColor} />
+
+      <Flex justify="between" align="center">
+        <Text>Net Monthly Cash Flow</Text>
+        {netCashFlow >= 0
+          ? <Text format={{ fontWeight: "bold", color: "success" }}>{fmt(netCashFlow)}</Text>
+          : <Text format={{ fontWeight: "bold", color: "alert" }}>{fmt(netCashFlow)}</Text>
+        }
+      </Flex>
+
+      <Flex justify="between" align="center">
+        <Text>Debt-to-Income Ratio</Text>
+        {dti <= 36
+          ? <Text format={{ fontWeight: "bold", color: "success" }}>{fmtPct(dti)}</Text>
+          : <Text format={{ fontWeight: "bold", color: "alert" }}>{fmtPct(dti)}</Text>
+        }
+      </Flex>
 
       <Text format={{ fontWeight: "bold" }}>Assets</Text>
       <Divider />
       <StatRow label="Total Asset Value" value={fmt(totalAssets)} />
-      <StatRow label="Net Worth (Assets − Monthly Expenses)" value={fmt(netWorth)} color={netWorthColor} />
+
+      <Flex justify="between" align="center">
+        <Text>Net Worth (Assets − Monthly Expenses)</Text>
+        {netWorth >= 0
+          ? <Text format={{ fontWeight: "bold", color: "success" }}>{fmt(netWorth)}</Text>
+          : <Text format={{ fontWeight: "bold", color: "alert" }}>{fmt(netWorth)}</Text>
+        }
+      </Flex>
     </Flex>
   );
 };
